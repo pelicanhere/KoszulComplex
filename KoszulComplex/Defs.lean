@@ -32,7 +32,8 @@ noncomputable def exteriorPower.contraction_aux : AlternatingMap R L (⋀[R]^n L
       exact AlternatingMap.map_update_add (ιMulti R n) (m ∘ w.succAbove) j x y
   map_update_smul' := by
     intro _ m i r x
-    have finsupp : (Function.support fun j ↦ ((-1 : R) ^ j.1 * f (Function.update m i x j)) • (exteriorPower.ιMulti R n) (Function.update m i x ∘ j.succAbove)).Finite := sorry
+    have finsupp : (Function.support fun j ↦ ((-1 : R) ^ j.1 * f (Function.update m i x j)) •
+      (exteriorPower.ιMulti R n) (Function.update m i x ∘ j.succAbove)).Finite := sorry
     rw [smul_finsum' r finsupp]
     congr
     ext j
@@ -42,18 +43,46 @@ noncomputable def exteriorPower.contraction_aux : AlternatingMap R L (⋀[R]^n L
       rw [← smul_assoc, smul_eq_mul, ← mul_assoc, ← mul_assoc, mul_comm _ r]
       congr
       ext k
-      simp only [Function.comp_apply, ne_eq, Fin.succAbove_ne i k, not_false_eq_true, Function.update_of_ne]
-    · simp only [ne_eq, jeqi, not_false_eq_true, Function.update_of_ne, SetLike.val_smul, exteriorPower.ιMulti_apply_coe]
+      simp only [Function.comp_apply, ne_eq, Fin.succAbove_ne i k, not_false_eq_true,
+        Function.update_of_ne]
+    · simp only [ne_eq, jeqi, not_false_eq_true, Function.update_of_ne, SetLike.val_smul,
+        exteriorPower.ιMulti_apply_coe]
       rw [smul_comm]
       congr
       by_cases jlast : j = Fin.last n
       · simp only [jlast, Fin.succAbove_last] at jeqi ⊢
         have ilast : i ≠ Fin.last n := fun a ↦ jeqi (id (Eq.symm a))
-        have (l : L) : Function.update m i l ∘ Fin.castSucc = Function.update (m ∘ Fin.castSucc) (i.castPred ilast) l := sorry
+        have (l : L) : Function.update m i l ∘ Fin.castSucc =
+          Function.update (m ∘ Fin.castSucc) (i.castPred ilast) l := sorry
         simp only [this (r • x), AlternatingMap.map_update_smul, this x]
-      · have (l : L) : Function.update m i l ∘ j.succAbove = Function.update (m ∘ j.succAbove) (Fin.predAbove (j.castPred jlast) i) l := sorry
+      · have (l : L) : Function.update m i l ∘ j.succAbove = Function.update (m ∘ j.succAbove)
+          (Fin.predAbove (j.castPred jlast) i) l := sorry
         simp only [this (r • x), AlternatingMap.map_update_smul, this x]
   map_eq_zero_of_eq' x i j eq neq := by
+    have lemma1 (i : Fin (n + 1)) (hi : i ≠ Fin.last n)(eq : x i = x (i + 1)) :
+      x ∘ i.succAbove = x ∘ (i + 1).succAbove := by
+      have i_lt : i < i + 1 := Fin.lt_add_one_iff.mpr (Fin.lt_last_iff_ne_last.mpr hi)
+      ext t
+      by_cases ch : t.castSucc < i + 1
+      . by_cases ch1 : t.castSucc < i
+        · simp [Fin.succAbove, ch1, Fin.lt_trans ch1 i_lt]
+        · simp only [not_lt] at ch1
+          have : t.castSucc = i := by
+            by_contra nh
+            have : i + 1 ≤ t.castSucc :=
+              Fin.add_one_le_of_lt (lt_of_le_of_ne ch1 fun a ↦ nh (id (Eq.symm a)))
+            exact (lt_self_iff_false (i + 1)).mp (Fin.lt_of_le_of_lt this ch)
+          simp [Fin.succAbove, this, i_lt, eq]
+          congr
+          rw [← this, ← Fin.coeSucc_eq_succ]
+      · simp only [not_lt] at ch
+        by_cases ch1 : t.castSucc = i + 1
+        · have : ¬ i + 1 < i := by simp [Fin.le_of_lt i_lt]
+          simp [Fin.succAbove, ch1, Fin.lt_last_iff_ne_last.mpr hi, eq, this]
+        · have : i + 1 < t.castSucc := lt_of_le_of_ne ch fun a ↦ ch1 (id (Eq.symm a))
+          have : ¬ t.castSucc < i := by simp [Fin.le_of_lt (Fin.lt_trans i_lt this)]
+          simp [Fin.succAbove, this, Lean.Omega.Fin.not_lt.mpr ch]
+
     set p := fun x ↦ (x = i ∨ x = j) with hp
     have (k : Fin (n + 1)) (hk : ¬ p k) :
       ((- 1 : R) ^ k.1 * (f (x k))) • exteriorPower.ιMulti R n (x.comp (Fin.succAbove k)) = 0 := by
@@ -87,13 +116,12 @@ noncomputable def exteriorPower.contraction_aux : AlternatingMap R L (⋀[R]^n L
       simp at kin
       exact this k kin
     rw [this]
+    have (i : Fin (n + 1)) (hi : i ≠ Fin.last n)(eq : x i = x (i + 1)) : (ιMulti R n) (x ∘ i.succAbove) =
+      (ιMulti R n) (x ∘ (i + 1).succAbove) := by
+      sorry
     have : ((-1) ^ i.1 * f (x i)) • (ιMulti R n) (x ∘ i.succAbove) +
           ((-1) ^ j.1 * f (x j)) • (ιMulti R n) (x ∘ j.succAbove) = 0 := by
       have : ((-1) ^ i.1) • (ιMulti R n) (x ∘ i.succAbove) + ((-1) ^ j.1) • (ιMulti R n) (x ∘ j.succAbove) = 0 := by
-        have : x ∘ i.succAbove = x ∘ (i + 1).succAbove := by
-          ext t
-          sorry
-        -- Ideal : prove it when j - i = 1 and induction j - i = 1 is because x ∘ i.succAbove
         sorry
       sorry
     sorry
