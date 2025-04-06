@@ -31,7 +31,50 @@ noncomputable def exteriorPower.contraction_aux : AlternatingMap R L (⋀[R]^n L
         simp only [this (r • x), AlternatingMap.map_update_smul, this x]
       · have (l : L) : Function.update m i l ∘ j.succAbove = Function.update (m ∘ j.succAbove) (Fin.predAbove (j.castPred jlast) i) l := sorry
         simp only [this (r • x), AlternatingMap.map_update_smul, this x]
-  map_eq_zero_of_eq' := sorry
+  map_eq_zero_of_eq' x i j eq neq := by
+    set p := fun x ↦ (x = i ∨ x = j) with hp
+    have (k : Fin (n + 1)) (hk : ¬ p k) :
+      ((- 1 : R) ^ k.1 * (f (x k))) • exteriorPower.ιMulti R n (x.comp (Fin.succAbove k)) = 0 := by
+      simp [p] at hk
+      have : f (x k) • (exteriorPower.ιMulti R n) (x ∘ k.succAbove) = 0 := by
+        have : (exteriorPower.ιMulti R n) (x ∘ k.succAbove) = 0 := by
+          set t : {x : Fin (n + 1) | x ≠ k} → Fin n := by
+            intro ⟨x, hx⟩
+            by_cases ch : x < k
+            · apply Fin.castPred x (Fin.ne_last_of_lt ch)
+            · push_neg at ch
+              have : x ≠ 0 := Fin.ne_zero_of_lt (lt_of_le_of_ne ch fun a ↦ hx (id (Eq.symm a)))
+              exact Fin.pred x this
+          have : Function.Injective t := sorry
+          have i_in : i ∈ {x : Fin (n + 1) | x ≠ k} := Set.mem_setOf.mpr (fun a ↦ hk.1 (id (a.symm)))
+          #check AlternatingMap.map_eq_zero_of_eq (exteriorPower.ιMulti R n) (x ∘ k.succAbove)
+          #check t ⟨i, i_in⟩
+          -- Dirty work
+          sorry
+        sorry
+      rw [mul_smul, this, MulActionWithZero.smul_zero]
+    rw [finsum_eq_sum_of_fintype]
+    show ∑ i ∈ Finset.univ , ((-1) ^ i.1 * f (x i)) • (exteriorPower.ιMulti R n) (x ∘ i.succAbove) = 0
+
+    rw [← Finset.sum_filter_add_sum_filter_not Finset.univ p
+      (fun i ↦ ((- 1 : R) ^ i.1 * (f (x i))) • exteriorPower.ιMulti R n (x.comp (Fin.succAbove i)))]
+
+    have : ∑ x_1 ∈ {x | ¬p x}, ((-1) ^ x_1.1 * f (x x_1)) • (exteriorPower.ιMulti R n) (x ∘ x_1.succAbove) = 0 := by
+      rw [Finset.sum_eq_zero]
+      intro k kin
+      simp at kin
+      exact this k kin
+    rw [this]
+    have : ((-1) ^ i.1 * f (x i)) • (ιMulti R n) (x ∘ i.succAbove) +
+          ((-1) ^ j.1 * f (x j)) • (ιMulti R n) (x ∘ j.succAbove) = 0 := by
+      have : ((-1) ^ i.1) • (ιMulti R n) (x ∘ i.succAbove) + ((-1) ^ j.1) • (ιMulti R n) (x ∘ j.succAbove) = 0 := by
+        have : x ∘ i.succAbove = x ∘ (i + 1).succAbove := by
+          ext t
+          sorry
+        -- Ideal : prove it when j - i = 1 and induction j - i = 1 is because x ∘ i.succAbove
+        sorry
+      sorry
+    sorry
 
 noncomputable def ModuleCat.exteriorPower.contraction :
     (of R L).exteriorPower (n + 1) ⟶ (of R L).exteriorPower n :=
