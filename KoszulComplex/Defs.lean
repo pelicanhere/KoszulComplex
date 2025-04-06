@@ -8,7 +8,29 @@ noncomputable def exteriorPower.contraction_aux : AlternatingMap R L (⋀[R]^n L
   toFun x := ∑ᶠ i : Fin (n + 1),
     ((- 1 : R) ^ i.1 * (f (x i))) • exteriorPower.ιMulti R n (x.comp (Fin.succAbove i))
   map_update_add' := sorry
-  map_update_smul' := sorry
+  map_update_smul' := by
+    intro _ m i r x
+    have finsupp : (Function.support fun j ↦ ((-1 : R) ^ j.1 * f (Function.update m i x j)) • (exteriorPower.ιMulti R n) (Function.update m i x ∘ j.succAbove)).Finite := sorry
+    rw [smul_finsum' r finsupp]
+    congr
+    ext j
+    by_cases jeqi : j = i
+    · rw [jeqi]
+      simp only [Function.update_self, map_smul, smul_eq_mul]
+      rw [← smul_assoc, smul_eq_mul, ← mul_assoc, ← mul_assoc, mul_comm _ r]
+      congr
+      ext k
+      simp only [Function.comp_apply, ne_eq, Fin.succAbove_ne i k, not_false_eq_true, Function.update_of_ne]
+    · simp only [ne_eq, jeqi, not_false_eq_true, Function.update_of_ne, SetLike.val_smul, exteriorPower.ιMulti_apply_coe]
+      rw [smul_comm]
+      congr
+      by_cases jlast : j = Fin.last n
+      · simp only [jlast, Fin.succAbove_last] at jeqi ⊢
+        have ilast : i ≠ Fin.last n := fun a ↦ jeqi (id (Eq.symm a))
+        have (l : L) : Function.update m i l ∘ Fin.castSucc = Function.update (m ∘ Fin.castSucc) (i.castPred ilast) l := sorry
+        simp only [this (r • x), AlternatingMap.map_update_smul, this x]
+      · have (l : L) : Function.update m i l ∘ j.succAbove = Function.update (m ∘ j.succAbove) (Fin.predAbove (j.castPred jlast) i) l := sorry
+        simp only [this (r • x), AlternatingMap.map_update_smul, this x]
   map_eq_zero_of_eq' := sorry
 
 noncomputable def ModuleCat.exteriorPower.contraction :
