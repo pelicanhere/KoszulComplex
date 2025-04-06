@@ -1,8 +1,10 @@
 import Mathlib
 
-variable {R : Type*} [CommRing R] (L : Type*) [AddCommGroup L] [Module R L] (f : L →ₗ[R] R) (n : ℕ)
+universe u v w
 
-open ExteriorAlgebra ModuleCat
+variable {R : Type u} [CommRing R] (L : Type v) [AddCommGroup L] [Module R L] (f : L →ₗ[R] R) (n : ℕ)
+
+open ExteriorAlgebra ModuleCat CategoryTheory
 
 noncomputable def exteriorPower.contraction_aux : AlternatingMap R L (⋀[R]^n L) (Fin (n + 1)) where
   toFun x := ∑ᶠ i : Fin (n + 1),
@@ -105,7 +107,8 @@ noncomputable def ModuleCat.exteriorPower.contraction :
 #check AlgebraicTopology.AlternatingFaceMapComplex.d_squared
 #check map_sum
 
-noncomputable def koszulComplex : HomologicalComplex (ModuleCat R) (ComplexShape.down ℕ) := by
+noncomputable def koszulComplex :
+    HomologicalComplex (ModuleCat.{max u v} R) (ComplexShape.down ℕ) := by
   refine ChainComplex.of (of R L).exteriorPower (ModuleCat.exteriorPower.contraction L f) (fun n ↦ ?_)
   ext x
   simp only [ModuleCat.AlternatingMap.postcomp_apply, ModuleCat.hom_comp, LinearMap.coe_comp,
@@ -130,7 +133,7 @@ namespace RingTheory.Sequence
 variable (rs : List R)
 
 /-- Let $\mathbf{x} = (x_1, \dots, x_n)$ be a sequence in $R$, consider
-  $f_{\mathbf{x}} : R^n, e_i \mapsto x_i$. The Koszul complex $K_{\bullet}(\mathbf{x})$
+  $f_{\mathbf{x}} : R^n \to R, e_i \mapsto x_i$. The Koszul complex $K_{\bullet}(\mathbf{x})$
   is defined as $K_{\bullet}(\mathbf{x}) := K_{\bullet}(f_{\mathbf{x}})$. -/
 noncomputable def koszulComplex : HomologicalComplex (ModuleCat R) (ComplexShape.down ℕ) :=
   _root_.koszulComplex (Fin rs.length →₀ R) <|
@@ -140,17 +143,33 @@ end RingTheory.Sequence
 
 section twisted
 
-universe u
+--set_option pp.universes true
+variable {R : Type u} [CommRing R] (M : ModuleCat.{w} R)
 
-variable {R : Type u} [CommRing R] (L : Type u) [AddCommGroup L] [Module R L] (f : L →ₗ[R] R)
-  (M : ModuleCat.{u} R) (n : ℕ)
+noncomputable def ModuleCat.tensorRight : (ModuleCat.{v} R) ⥤ (ModuleCat.{max v w} R) where
+  obj N := ModuleCat.MonoidalCategory.tensorObj N M
+  map N := ModuleCat.MonoidalCategory.whiskerRight N M
+  map_id _ := ModuleCat.hom_ext (TensorProduct.ext rfl)
+  map_comp _ _ := ModuleCat.hom_ext (TensorProduct.ext rfl)
 
-/-- The Koszul complex with coefficients in $M$ is defined as $K_{\bullet}(f) := K_{\bullet}(f)⊗M$. -/
-noncomputable def twistedKoszulComplex : HomologicalComplex (ModuleCat R) (ComplexShape.down ℕ) :=
-  ((CategoryTheory.MonoidalCategory.tensorRight M).mapHomologicalComplex (ComplexShape.down ℕ)).obj
-    (koszulComplex L f)
+instance : (ModuleCat.tensorRight M).Additive where
+  map_add := by
+    refine ModuleCat.hom_ext (TensorProduct.ext ?_)
+    simp only [tensorRight, ModuleCat.MonoidalCategory.whiskerRight, hom_add, LinearMap.rTensor_add]
+    rfl
 
-/-- $H_n(f, M)$ is the Koszul homology with coefficients in $M$ is defined as . -/
-noncomputable def twistedKoszulHomology : ModuleCat R := (twistedKoszulComplex L f M).homology n
+variable {R : Type u} [CommRing R] (L : Type v) [AddCommGroup L] [Module R L] (f : L →ₗ[R] R)
+  (M : ModuleCat.{w} R) (n : ℕ)
+
+/-- The Koszul complex with coefficients in $M$ is defined as
+  $K_{\bullet}(f, M) := K_{\bullet}(f)⊗M$. -/
+noncomputable def twistedKoszulComplex :
+    HomologicalComplex (ModuleCat.{max u v w} R) (ComplexShape.down ℕ) :=
+  ((ModuleCat.tensorRight M).mapHomologicalComplex (ComplexShape.down ℕ)).obj (koszulComplex L f)
+
+/-- The Koszul homology with coefficients in $M$ is defined as
+  $H_n(f, M) := H_n(K_{\bullet}(f, M))$. -/
+noncomputable def twistedKoszulHomology : ModuleCat.{max u v w} R :=
+  (twistedKoszulComplex L f M).homology n
 
 end twisted
