@@ -6,6 +6,10 @@ variable {R : Type u} [CommRing R] (L : Type v) [AddCommGroup L] [Module R L] (f
 
 open ExteriorAlgebra ModuleCat CategoryTheory
 
+example (a b : R) : - a = b ↔ a + b = 0:= by
+  exact neg_eq_iff_add_eq_zero
+
+
 noncomputable def exteriorPower.contraction_aux : AlternatingMap R L (⋀[R]^n L) (Fin (n + 1)) where
   toFun x := ∑ᶠ i : Fin (n + 1),
     ((- 1 : R) ^ i.1 * (f (x i))) • exteriorPower.ιMulti R n (x.comp (Fin.succAbove i))
@@ -50,6 +54,11 @@ noncomputable def exteriorPower.contraction_aux : AlternatingMap R L (⋀[R]^n L
         (Fin.succAbove_right_injective (p := j)) l)
       rw [this _, this _, AlternatingMap.map_update_smul]
   map_eq_zero_of_eq' x i j eq neq := by
+    wlog lt : i < j
+    · simp at lt
+      have lt : j < i := lt_of_le_of_ne lt (id (Ne.symm neq))
+      exact this L f n x j i eq.symm neq.symm lt
+
     have lemma1 (i : Fin (n + 1)) (hi : i ≠ Fin.last n)(eq : x i = x (i + 1)) :
       x ∘ i.succAbove = x ∘ (i + 1).succAbove := by
       have i_lt : i < i + 1 := Fin.lt_add_one_iff.mpr (Fin.lt_last_iff_ne_last.mpr hi)
@@ -58,6 +67,7 @@ noncomputable def exteriorPower.contraction_aux : AlternatingMap R L (⋀[R]^n L
       . by_cases ch1 : t.castSucc < i
         · simp [Fin.succAbove, ch1, Fin.lt_trans ch1 i_lt]
         · simp only [not_lt] at ch1
+          -- this `have` may have better method, however I'm so stupid.....
           have : t.castSucc = i := by
             by_contra nh
             have : i + 1 ≤ t.castSucc :=
@@ -73,6 +83,37 @@ noncomputable def exteriorPower.contraction_aux : AlternatingMap R L (⋀[R]^n L
         · have : i + 1 < t.castSucc := lt_of_le_of_ne ch fun a ↦ ch1 (id (Eq.symm a))
           have : ¬ t.castSucc < i := by simp [Fin.le_of_lt (Fin.lt_trans i_lt this)]
           simp [Fin.succAbove, this, Lean.Omega.Fin.not_lt.mpr ch]
+
+
+    have : ((-1) ^ i.1 * f (x i)) • (ιMulti R n) (x ∘ i.succAbove) +
+          ((-1) ^ j.1 * f (x j)) • (ιMulti R n) (x ∘ j.succAbove) = 0 := by
+      set P : Fin (n + 1) → Prop := fun dis ↦ (i < j → j = i + 1 + dis → x i = x j →
+        ((-1) ^ i.1 * f (x i)) • (ιMulti R n) (x ∘ i.succAbove) +
+        ((-1) ^ j.1 * f (x j)) • (ιMulti R n) (x ∘ j.succAbove) = 0)
+      have zero : P 0 := by
+        intro lt eq xeq
+        simp at eq
+        rw [eq] at xeq
+        have : ((-1) ^ i.1 * f (x i)) • ((ιMulti R n) (x ∘ i.succAbove) -
+            (ιMulti R n) (x ∘ (i + 1).succAbove)) = 0 := by
+          have := lemma1 i (Fin.ne_last_of_lt lt) xeq
+          rw [sub_eq_zero_of_eq (congrArg (⇑(ιMulti R n)) this), smul_zero]
+        rw [smul_sub] at this
+        have s : - ((-1) ^ i.1 * f (x i)) • (ιMulti R n) (x ∘ (i + 1).succAbove)
+              = ((-1) ^ (i.1 + 1) * f (x i)) • (ιMulti R n) (x ∘ (i + 1).succAbove) := by
+          congr
+          refine neg_eq_of_add_eq_zero_right ?_
+          ring
+        have : (i + 1).1 = i.1 + 1 :=
+          Fin.val_add_one_of_lt (Fin.lt_last_iff_ne_last.mpr (Fin.ne_last_of_lt lt))
+        rw [eq, this, ← xeq, ← s, lemma1]
+        module
+        exact Fin.ne_last_of_lt lt
+        exact xeq
+
+
+      sorry
+
 
     set p := fun x ↦ (x = i ∨ x = j) with hp
     have (k : Fin (n + 1)) (hk : ¬ p k) :
