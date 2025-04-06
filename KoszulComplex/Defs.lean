@@ -31,16 +31,15 @@ noncomputable def exteriorPower.contraction_aux : AlternatingMap R L (⋀[R]^n L
         (Fin.succAbove_right_injective (p := w)) j)
       rw [this _, this _, this _, AlternatingMap.map_update_add]
   map_update_smul' m i r x := by
-    have finsupp : (Function.support fun j ↦ ((-1 : R) ^ j.1 * f (Function.update m i x j)) • (exteriorPower.ιMulti R n) (Function.update m i x ∘ j.succAbove)).Finite := sorry
-    rw [smul_finsum' r finsupp]
+    rw [finsum_eq_sum_of_fintype, finsum_eq_sum_of_fintype, Finset.smul_sum]
     congr
-    ext j
+    funext j
     by_cases jeqi : j = i
     · rw [jeqi, Function.update_self, Function.update_self, map_smul,
         smul_eq_mul, ← smul_assoc, smul_eq_mul, ← mul_assoc, ← mul_assoc,
         mul_comm _ r]
       congr
-      ext k
+      funext k
       simp only [Function.comp_apply, ne_eq, Fin.succAbove_ne i k, not_false_eq_true, Function.update_of_ne]
     · simp only [ne_eq, jeqi, not_false_eq_true, Function.update_of_ne, SetLike.val_smul, exteriorPower.ιMulti_apply_coe]
       rw [smul_comm]
