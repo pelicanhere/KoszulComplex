@@ -1,6 +1,6 @@
 import Mathlib
 
-variable {R : Type*} [CommRing R] (L : ModuleCat R) (f : L →ₗ[R] R) (n : ℕ)
+variable {R : Type*} [CommRing R] (L : ModuleCat R) (f : L →ₗ[R] R) (M : ModuleCat R) (n : ℕ)
 
 open ExteriorAlgebra
 
@@ -34,3 +34,14 @@ noncomputable def koszulComplex : ChainComplex (ModuleCat R) ℕ := by
      := by
     sorry
   sorry
+
+/-- The Koszul homology $H_n(f)$. -/
+noncomputable def koszulHomology : ModuleCat R := (koszulComplex L f).homology n
+
+/-- The Koszul complex with coefficients in $M$ is defined as $K_{\bullet}(f) := K_{\bullet}(f)⊗M$. -/
+noncomputable def twistedKoszulComplex : ChainComplex (ModuleCat R) ℕ :=
+  ((CategoryTheory.MonoidalCategory.tensorRight M).mapHomologicalComplex (ComplexShape.down ℕ)).obj
+    (koszulComplex L f)
+
+/-- The Koszul homology with coefficients in $M$ is defined as $H_n(f, M)$. -/
+noncomputable def twistedKoszulHomology : ModuleCat R := (twistedKoszulComplex L f M).homology n
