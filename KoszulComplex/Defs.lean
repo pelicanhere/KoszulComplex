@@ -52,17 +52,70 @@ noncomputable def exteriorPower.contraction_aux : AlternatingMap R L (⋀[R]^n L
       rw [this _, this _, AlternatingMap.map_update_smul]
   map_eq_zero_of_eq' x i j eq neq := by sorry
 
-lemma step (x : Fin (n + 1) → L) (i j : Fin (n + 1)) (eq : x i = x j) (neq : i ≠ j) :
+lemma step [NeZero n](x : Fin (n + 1) → L) (i j : Fin (n + 1)) (eq : x i = x j) (neq : i ≠ j) :
     ∑ᶠ (i : Fin (n + 1)), ((-1) ^ i.1 * f (x i)) • (ιMulti R n) (x ∘ i.succAbove) = 0 := by
   wlog le : i ≤ j
   · simp [neq] at le
     exact this L f n x j i eq.symm neq.symm (Fin.le_of_lt le)
 
-  #check cycleIcc
+  have lt : i < j := by omega
+  have ilt : i.1 < n := by
+    have : j.1 < n + 1 := by omega
+    omega
+  have jlt : (j - 1).1 < n := by
+    rw [Fin.val_sub_one_of_ne_zero (Fin.ne_zero_of_lt lt)]
+    omega
+  have hij : Fin.castLT i ilt ≤ Fin.castLT (j - 1) jlt := by
+    refine Fin.le_def.mpr ?_
+    simp
+    refine Fin.le_def.mpr ?_
+    rw [Fin.val_sub_one_of_ne_zero (Fin.ne_zero_of_lt lt)]
+    omega
+
+  #check cycleIcc hij
   #check AlternatingMap.map_perm
 
-  have : i.succAbove = j.succAbove ∘ sorry := by
-    sorry
+  have : x ∘ i.succAbove = x ∘ j.succAbove ∘ (cycleIcc hij) := by
+    ext k
+    simp [Fin.succAbove]
+    by_cases ch : k.castSucc < i
+    · simp [cycleIcc_of_gt hij ch, ch, Fin.lt_trans ch lt]
+    simp [ch]
+    by_cases ch1 : (j - 1).castLT jlt < k
+    · rw [cycleIcc_of_le hij ch1]
+      have : ¬ k.castSucc < j := by
+        rw [not_lt, Fin.le_def]
+        simp [Fin.lt_def, Fin.val_sub_one_of_ne_zero (Fin.ne_zero_of_lt lt)] at ch1 ⊢
+        omega
+      simp [this]
+    simp at ch ch1
+    have hik: Fin.castLT i ilt ≤ k := by
+      refine Fin.le_def.mpr ?_
+      simpa
+    by_cases ch2 : k < (j - 1).castLT jlt
+    · rw [cycleRange_of_lt hij ch ch2]
+      have lm : (k + 1).1 = k.1 + 1 := by
+          simp [@Fin.val_add]
+          refine (Nat.mod_eq_iff_lt (Nat.ne_zero_of_lt ilt)).mpr ?_
+          omega
+      have : (k + 1).castSucc < j := by
+        refine Fin.lt_def.mpr ?_
+        simp [lm]
+        simp [Fin.lt_def, Fin.val_sub_one_of_ne_zero (Fin.ne_zero_of_lt lt)] at ch2
+        omega
+      simp [this]
+      congr
+      refine Fin.eq_of_val_eq ?_
+      simp [lm]
+    simp at ch2
+    have : (cycleIcc hij) k = i.castLT ilt := by
+      rw [← Fin.le_antisymm ch2 ch1, cycleRange_of_eq hij]
+    simp [this, lt, eq]
+    congr
+    have : (j - 1).castLT jlt = k := Fin.le_antisymm ch2 ch1
+    simp [@Fin.ext_iff] at this ⊢
+    rw [← this, Fin.val_sub_one_of_ne_zero (Fin.ne_zero_of_lt lt)]
+    omega
   have : ((-1) ^ i.1 * f (x i)) • (ιMulti R n) (x ∘ i.succAbove)
        + ((-1) ^ j.1 * f (x j)) • (ιMulti R n) (x ∘ j.succAbove) = 0 := by
 
