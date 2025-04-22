@@ -82,38 +82,29 @@ lemma step [NeZero n](x : Fin (n + 1) → L) (i j : Fin (n + 1)) (eq : x i = x j
     · simp [cycleIcc_of_gt hij ch, ch, Fin.lt_trans ch lt]
     simp [ch]
     by_cases ch1 : (j - 1).castLT jlt < k
-    · rw [cycleIcc_of_le hij ch1]
-      have : ¬ k.castSucc < j := by
+    · have : ¬ k.castSucc < j := by
         rw [not_lt, Fin.le_def]
         simp [Fin.lt_def, Fin.val_sub_one_of_ne_zero (Fin.ne_zero_of_lt lt)] at ch1 ⊢
         omega
-      simp [this]
+      simp [cycleIcc_of_le hij ch1, this]
     simp at ch ch1
-    have hik: Fin.castLT i ilt ≤ k := by
-      refine Fin.le_def.mpr ?_
-      simpa
+    have hik: Fin.castLT i ilt ≤ k := Fin.le_def.mpr (by simpa)
     by_cases ch2 : k < (j - 1).castLT jlt
-    · rw [cycleRange_of_lt hij ch ch2]
-      have lm : (k + 1).1 = k.1 + 1 := by
-          simp [@Fin.val_add]
-          refine (Nat.mod_eq_iff_lt (Nat.ne_zero_of_lt ilt)).mpr ?_
-          omega
-      have : (k + 1).castSucc < j := by
+    · have : (k + 1).castSucc < j := by
         refine Fin.lt_def.mpr ?_
-        simp [lm]
+        simp [Fin.val_add_one_of_lt' ch2]
         simp [Fin.lt_def, Fin.val_sub_one_of_ne_zero (Fin.ne_zero_of_lt lt)] at ch2
         omega
-      simp [this]
+      simp [cycleIcc_of_lt hij ch ch2, this]
       congr
       refine Fin.eq_of_val_eq ?_
-      simp [lm]
+      simp [Fin.val_add_one_of_lt' ch2]
     simp at ch2
-    have : (cycleIcc hij) k = i.castLT ilt := by
-      rw [← Fin.le_antisymm ch2 ch1, cycleRange_of_eq hij]
+    have : (cycleIcc hij) k = i.castLT ilt := by rw [← Fin.le_antisymm ch2 ch1, cycleIcc_of_eq hij]
     simp [this, lt, eq]
     congr
     have : (j - 1).castLT jlt = k := Fin.le_antisymm ch2 ch1
-    simp [@Fin.ext_iff] at this ⊢
+    simp [Fin.ext_iff] at this ⊢
     rw [← this, Fin.val_sub_one_of_ne_zero (Fin.ne_zero_of_lt lt)]
     omega
   have : ((-1) ^ i.1 * f (x i)) • (ιMulti R n) (x ∘ i.succAbove)

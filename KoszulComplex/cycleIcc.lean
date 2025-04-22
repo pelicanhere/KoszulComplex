@@ -47,8 +47,7 @@ unchanged.
 -/
 def cycleIcc {n : ℕ} {i j : Fin n} (hij : i ≤ j): Perm (Fin n) :=
   have : (j - i).1 < n - i.1 := by simp [sub_val_of_le hij, Nat.sub_lt_sub_right hij j.isLt]
-  (cycleRange (Fin.castLT (j - i) this)).extendDomain
-    (natAdd_castLEEmb n (by simp)).toEquivRange
+  (cycleRange (Fin.castLT (j - i) this)).extendDomain (natAdd_castLEEmb n (by simp)).toEquivRange
 
 theorem cycleIcc_of_gt {n : ℕ} {i j k : Fin n} (hij : i ≤ j) (h : k < i) : (cycleIcc hij) k = k :=
   Perm.extendDomain_apply_not_subtype ((j - i).castLT _).cycleRange
@@ -82,6 +81,10 @@ theorem cycleIcc_of_le {n : ℕ} {i j k : Fin n} (hij : i ≤ j) (h : j < k) :
 
 instance {n : ℕ} {i: Fin n} : NeZero (n - i.1) := NeZero.of_pos (by omega)
 
+@[simp] theorem Fin.val_add_one_of_lt' {n : ℕ} [NeZero n] {i j : Fin n} (hij : i < j) :
+    (i + 1).1 = i.1 + 1 := by
+  simpa [Fin.val_add] using ((Nat.mod_eq_iff_lt (Ne.symm (NeZero.ne' n))).mpr (by omega))
+
 @[simp]
 theorem cycleIcc_of {n : ℕ} {i j k : Fin n} (hij : i ≤ j) (h1 : i <= k) (h2 : k <= j) [NeZero n]:
     (cycleIcc hij) k = if k = j then i else k + 1 := by
@@ -94,25 +97,25 @@ theorem cycleIcc_of {n : ℕ} {i j k : Fin n} (hij : i ≤ j) (h1 : i <= k) (h2 
     simpa [h3, cycleRange_of_eq h] using by omega
   · have h : subNat i.1 (Fin.cast (by omega) k) (by simp [h1]) < (j - i).castLT
         (cycleIcc._proof_3 hij) := by simp [subNat, lt_iff_val_lt_val, sub_val_of_le hij]; omega
-    have : (k.1 + 1) % n = k.1 + 1 := Nat.mod_eq_of_lt (by omega)
     rw [cycleRange_of_lt h, subNat]
+    have : (k.1 + 1) % n = k.1 + 1 := Nat.mod_eq_of_lt (by omega)
     simp only [coe_cast, add_def, val_one', Nat.add_mod_mod, addNat_mk, cast_mk, this]
     rw [Nat.mod_eq_of_lt (by omega)]
     omega
 
 @[simp]
-theorem cycleRange_of_lt {n : ℕ} {i j k : Fin n} (hij : i ≤ j) (h1 : i <= k) (h2 : k < j)
+theorem cycleIcc_of_lt {n : ℕ} {i j k : Fin n} (hij : i ≤ j) (h1 : i <= k) (h2 : k < j)
     [NeZero n] : (cycleIcc hij) k = k + 1 := by
   simp [cycleIcc_of hij h1 (Fin.le_of_lt h2), Fin.ne_of_lt h2]
 
 @[simp]
-theorem cycleRange_of_eq {n : ℕ} {i j : Fin n} (hij : i ≤ j) [NeZero n] :
+theorem cycleIcc_of_eq {n : ℕ} {i j : Fin n} (hij : i ≤ j) [NeZero n] :
     (cycleIcc hij) j = i := by
   simp [cycleIcc_of hij hij (Fin.ge_of_eq rfl)]
 
 @[simp]
 theorem sign_cycleIcc {n : ℕ} {i j : Fin n} (hij : i ≤ j) :
-  Perm.sign (cycleIcc hij) = (-1) ^ (j - i : ℕ) := by
+    Perm.sign (cycleIcc hij) = (-1) ^ (j - i : ℕ) := by
   simp [cycleIcc, sub_val_of_le hij]
 
 private lemma Nezero_simp_lemma {n : ℕ} {i j : Fin n} (hij : i < j) :
