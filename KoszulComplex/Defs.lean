@@ -15,7 +15,7 @@ open ExteriorAlgebra ModuleCat CategoryTheory Fin Function
 
 noncomputable def exteriorPower.contraction_aux : AlternatingMap R L (⋀[R]^n L) (Fin (n + 1)) where
   toFun x := ∑ᶠ i : Fin (n + 1),
-    ((- 1 : R) ^ i.1 * (f (x i))) • exteriorPower.ιMulti R n (x.comp (Fin.succAbove i))
+    ((- 1 : R) ^ i.1 * (f (x i))) • exteriorPower.ιMulti R n (x.comp i.succAbove)
   map_update_add' m i x y := by
     rw [finsum_eq_sum_of_fintype, finsum_eq_sum_of_fintype, finsum_eq_sum_of_fintype,
       ← Finset.sum_add_distrib]
@@ -25,8 +25,8 @@ noncomputable def exteriorPower.contraction_aux : AlternatingMap R L (⋀[R]^n L
     congr
     by_cases hw : w = i
     · rw [hw, update_self, update_self, update_self, map_add, add_smul]
-      congr <;> (funext k ; rw [comp_apply, comp_apply, update_of_ne (Fin.succAbove_ne i k),
-        update_of_ne (Fin.succAbove_ne i k)])
+      congr <;> (funext k ; rw [comp_apply, comp_apply, update_of_ne (i.succAbove_ne k),
+        update_of_ne (i.succAbove_ne k)])
     · rw [update_of_ne hw, update_of_ne hw, update_of_ne hw, ← smul_add]
       congr
       obtain ⟨j, hj⟩ : ∃ j : Fin n, w.succAbove j = i :=
@@ -50,74 +50,127 @@ noncomputable def exteriorPower.contraction_aux : AlternatingMap R L (⋀[R]^n L
         exists_succAbove_eq (show j ≠ i by exact jeqi).symm
       have := hl ▸ (update_comp_eq_of_injective m (succAbove_right_injective (p := j)) l)
       rw [this _, this _, AlternatingMap.map_update_smul]
-  map_eq_zero_of_eq' x i j eq neq := by sorry
+  map_eq_zero_of_eq' x i j eq neq := by
+    wlog le : i ≤ j
+    · simp [neq] at le
+      exact this L f n x j i eq.symm neq.symm (le_of_lt le)
+    sorry
 
+omit [AddCommGroup L] in
+theorem succAbove_comp_cycleIcc [NeZero n] (x : Fin (n + 1) → L) (i j : Fin (n + 1)) (eq : x i = x j)
+    (ilt : i.1 < n) (jlt : (j - 1).1 < n) (lt : i < j) (hij : castLT i ilt ≤ castLT (j - 1) jlt):
+    x ∘ i.succAbove = x ∘ j.succAbove ∘ (cycleIcc hij) := by
+  ext k
+  simp [succAbove]
+  by_cases ch : k.castSucc < i
+  · simp [cycleIcc_of_gt hij ch, ch, lt_trans ch lt]
+  simp [ch]
+  by_cases ch1 : (j - 1).castLT jlt < k
+  · have : ¬ k.castSucc < j := by
+      simp [not_lt, lt_def, val_sub_one_of_ne_zero (ne_zero_of_lt lt)] at ch1 ⊢
+      omega
+    simp [cycleIcc_of_le hij ch1, this]
+  simp at ch ch1
+  have hik: i.castLT ilt ≤ k := le_def.mpr (by simpa)
+  by_cases ch2 : k < (j - 1).castLT jlt
+  · have : (k + 1).castSucc < j := by
+      rw [lt_def, coe_castSucc, val_add_one_of_lt' ch2]
+      simp [lt_def, val_sub_one_of_ne_zero (ne_zero_of_lt lt)] at ch2
+      omega
+    simp [cycleIcc_of_lt hij ch ch2, this]
+    congr
+    exact eq_of_val_eq (by simp [val_add_one_of_lt' ch2])
+  simp at ch2
+  have : (cycleIcc hij) k = i.castLT ilt := by rw [← le_antisymm ch2 ch1, cycleIcc_of_eq hij]
+  simp [this, lt, eq]; congr
+  exact eq_of_val_eq
+    (by simp [← le_antisymm ch2 ch1, val_sub_one_of_ne_zero (ne_zero_of_lt lt)]; omega)
 
-lemma step [NeZero n] (x : Fin (n + 1) → L) (i j : Fin (n + 1)) (eq : x i = x j) (neq : i ≠ j) :
-    ∑ᶠ (i : Fin (n + 1)), ((-1) ^ i.1 * f (x i)) • (ιMulti R n) (x ∘ i.succAbove) = 0 := by
-  wlog le : i ≤ j
-  · simp [neq] at le
-    exact this L f n x j i eq.symm neq.symm (Fin.le_of_lt le)
-  have lt : i < j := by omega
+lemma step1 [NeZero n] (x : Fin (n + 1) → L) (i j : Fin (n + 1)) (eq : x i = x j) (lt : i < j) :
+    ((-1) ^ i.1 * f (x i)) • (ιMulti R n) (x ∘ i.succAbove)
+    + ((-1) ^ j.1 * f (x j)) • (ιMulti R n) (x ∘ j.succAbove) = 0 := by
   have ilt : i.1 < n := by omega
-  have jlt : (j - 1).1 < n := by rw [Fin.val_sub_one_of_ne_zero (Fin.ne_zero_of_lt lt)]; omega
-  have hij : Fin.castLT i ilt ≤ Fin.castLT (j - 1) jlt := by
-    refine Fin.le_def.mpr ?_
+  have jlt : (j - 1).1 < n := by rw [val_sub_one_of_ne_zero (ne_zero_of_lt lt)]; omega
+  have hij : castLT i ilt ≤ castLT (j - 1) jlt := by
+    refine le_def.mpr ?_
     simp only [coe_castLT, val_fin_le]
     rw [le_def, val_sub_one_of_ne_zero (ne_zero_of_lt lt)]
     omega
-  have succAbove_comp_cycleIcc : x ∘ i.succAbove = x ∘ j.succAbove ∘ (cycleIcc hij) := by
-    ext k
-    simp [succAbove]
-    by_cases ch : k.castSucc < i
-    · simp [cycleIcc_of_gt hij ch, ch, lt_trans ch lt]
-    simp [ch]
-    by_cases ch1 : (j - 1).castLT jlt < k
-    · have : ¬ k.castSucc < j := by
-        rw [not_lt, Fin.le_def]
-        simp [Fin.lt_def, Fin.val_sub_one_of_ne_zero (Fin.ne_zero_of_lt lt)] at ch1 ⊢
-        omega
-      simp [cycleIcc_of_le hij ch1, this]
-    simp at ch ch1
-    have hik: i.castLT ilt ≤ k := le_def.mpr (by simpa)
-    by_cases ch2 : k < (j - 1).castLT jlt
-    · have : (k + 1).castSucc < j := by
-        rw [lt_def, coe_castSucc, val_add_one_of_lt' ch2]
-        simp [Fin.lt_def, Fin.val_sub_one_of_ne_zero (Fin.ne_zero_of_lt lt)] at ch2
-        omega
-      simp [cycleIcc_of_lt hij ch ch2, this]
-      congr
-      refine Fin.eq_of_val_eq ?_
-      simp [Fin.val_add_one_of_lt' ch2]
+  rw [succAbove_comp_cycleIcc L n x i j eq ilt jlt lt hij]
+  show ((-1) ^ i.1 * f (x i)) • ((ιMulti R n) ((x ∘ j.succAbove) ∘ ⇑(cycleIcc hij)))
+      + ((-1) ^ j.1 * f (x j)) • (ιMulti R n) (x ∘ j.succAbove) = 0
+  simp only [eq, AlternatingMap.map_perm (ιMulti R n) (x ∘ j.succAbove) (cycleIcc hij),
+    sign_cycleIcc, coe_castLT, Z_simp R ((j - 1).1 - i.1) ((ιMulti R n) (x ∘ j.succAbove))]
+  have : (-1 : R) ^ i.1 * (-1 : R) ^ ((j - 1).1 - i.1) + (-1) ^ j.1 = 0 := by
+    have : i.1 + (j.1 - 1 - i.1) = j.1 - 1 := by omega
+    have part: (-1 : R) ^ (j.1 - 1) * (-1) ^ 1 = (-1 : R) ^ (j.1) := by
+      rw [← (pow_add (-1) (↑j - 1) 1)]; congr; omega
+    simp at part
+    rw [val_sub_one_of_ne_zero (ne_zero_of_lt lt), ← npow_add, this, ← part, add_neg_cancel]
+  rw [← mul_smul, ← add_smul, mul_assoc]
+  nth_rw 2 [mul_comm]
+  rw [← mul_assoc, ← add_mul, this, zero_mul, zero_smul]
+
+def aux (k : Fin (n + 1)) : {x : Fin (n + 1) | x ≠ k} → Fin n := fun ⟨x, hx⟩ ↦ by
+  by_cases ch : x < k
+  · exact x.castPred (ne_last_of_lt ch)
+  · push_neg at ch
+    exact x.pred (ne_zero_of_lt (lt_of_le_of_ne ch fun a ↦ hx (id (Eq.symm a))))
+
+lemma aux_inj (k : Fin (n + 1)) : Function.Injective (aux n k) := by
+  intro i j eq
+  wlog h : i ≤ j
+  · simp at h
+    exact (this n k eq.symm (le_of_lt h)).symm
+  refine SetCoe.ext ?_
+  by_cases ch1 : j < k
+  · simpa [aux, ch1, Fin.lt_of_le_of_lt h ch1] using eq
+  have ch2 : i ≥ k := by
+    by_contra ch2
     simp at ch2
-    have : (cycleIcc hij) k = i.castLT ilt := by rw [← Fin.le_antisymm ch2 ch1, cycleIcc_of_eq hij]
-    simp [this, lt, eq]
-    congr
-    have : (j - 1).castLT jlt = k := Fin.le_antisymm ch2 ch1
-    simp [Fin.ext_iff] at this ⊢
-    rw [← this, Fin.val_sub_one_of_ne_zero (Fin.ne_zero_of_lt lt)]
+    simp [aux, ch1, ch2] at eq
+    have := congrArg val eq
+    simp at this ch1
+    have : j.1 ≠ k := Subtype.coe_prop j
     omega
-  have : ((-1) ^ i.1 * f (x i)) • (ιMulti R n) (x ∘ i.succAbove)
-       + ((-1) ^ j.1 * f (x j)) • (ιMulti R n) (x ∘ j.succAbove) = 0 := by
-    rw [succAbove_comp_cycleIcc]
-    show ((-1) ^ i.1 * f (x i)) • ((ιMulti R n) ((x ∘ j.succAbove) ∘ ⇑(cycleIcc hij)))
-        + ((-1) ^ j.1 * f (x j)) • (ιMulti R n) (x ∘ j.succAbove) = 0
-    simp only [eq, AlternatingMap.map_perm (ιMulti R n) (x ∘ j.succAbove) (cycleIcc hij),
-      sign_cycleIcc, coe_castLT, Z_simp R ((j - 1).1 - i.1) ((ιMulti R n) (x ∘ j.succAbove))]
-    have : (-1 : R) ^ i.1 * (-1 : R) ^ ((j - 1).1 - i.1) + (-1) ^ j.1 = 0 := by
-      have : i.1 + (j.1 - 1 - i.1) = j.1 - 1 := by omega
-      have part: (-1 : R) ^ (j.1 - 1) * (-1) ^ 1 = (-1 : R) ^ (j.1) := by
-        rw [← (pow_add (-1) (↑j - 1) 1)]
-        congr
-        omega
-      simp at part
-      rw [Fin.val_sub_one_of_ne_zero (Fin.ne_zero_of_lt lt), ← npow_add, this, ← part, add_neg_cancel]
-    rw [← mul_smul, ← add_smul, mul_assoc]
-    nth_rw 2 [mul_comm]
-    rw [← mul_assoc, ← add_mul, this, zero_mul, zero_smul]
-  sorry
+  simpa [aux, not_lt.mpr ch2, ch1] using eq
 
+lemma left_inv (k : Fin (n + 1))(i : {x : Fin (n + 1) | x ≠ k}): k.succAbove (aux n k i) = i.1 := by
+  have : k ≠ i.1 := (Subtype.coe_prop i).symm
+  by_cases ch : ¬ i.1 < k
+  · simp [aux, ch]
+    rw [succAbove]
+    have : ¬ (i.1.pred (aux._proof_6 n k (i.1) i.property (Eq.mpr_not (Eq.refl (↑i < k)) ch))).castSucc < k := by
+      simp [le_def]
+      simp at ch
+      have : k < i.1 := lt_of_le_of_ne ch this
+      omega
+    simp [this]
+  · simp at ch
+    simp [aux, ch]
+    have : (i.1.castPred (ne_last_of_lt (of_eq_true (eq_true ch)))).castSucc < k := by
+      simp [lt_def, ch]
+    rw [succAbove]
+    have : ((i.1).castPred (ne_last_of_lt (of_eq_true (eq_true ch)))).castSucc = i := by
+      simp
+    rw [this]
+    exact if_pos ch
 
+lemma step2 [NeZero n] (x : Fin (n + 1) → L) (i j k : Fin (n + 1)) (eq : x i = x j) (neq : i ≠ j)
+    (hk : k ≠ i ∧ k ≠ j): ((-1) ^ k.1 * f (x k)) • (ιMulti R n) (x ∘ k.succAbove) = 0 := by
+  have : (ιMulti R n) (x ∘ k.succAbove) = 0 := by
+    have i_in : i ∈ {x : Fin (n + 1) | x ≠ k} := Set.mem_setOf.mpr (fun a ↦ hk.1 (id (a.symm)))
+    have j_in : j ∈ {x : Fin (n + 1) | x ≠ k} := Set.mem_setOf.mpr (fun a ↦ hk.2 (id (a.symm)))
+    have eq : (x ∘ k.succAbove) (aux n k ⟨i, i_in⟩) = (x ∘ k.succAbove) (aux n k ⟨j, j_in⟩) := by
+      show x (k.succAbove (aux n k ⟨i, i_in⟩)) = x (k.succAbove (aux n k ⟨j, j_in⟩))
+      simp [left_inv, eq]
+    have neq : (aux n k ⟨i, i_in⟩) ≠ (aux n k ⟨j, j_in⟩) := fun eq ↦ by
+      have := aux_inj n k eq
+      simp[neq] at this
+    exact AlternatingMap.map_eq_zero_of_eq (ιMulti R n) (x ∘ k.succAbove) eq neq
+  rw [mul_smul]
+  show (-1) ^ k.1 • (f (x k) • (ιMulti R n) (x ∘ k.succAbove)) = 0
+  simp [this]
 
 noncomputable def ModuleCat.exteriorPower.contraction :
     (of R L).exteriorPower (n + 1) ⟶ (of R L).exteriorPower n :=
