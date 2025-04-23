@@ -9,11 +9,9 @@ lemma Z_simp (R : Type u) [Ring R] {L : Type v} [AddCommGroup L] [Module R L]
   · simp [ch]
   · simp [ch]
 
-instance lt_ne {n : ℕ}{i j : Fin (n + 1)} (hij : i < j) : NeZero n := by
+lemma lt_ne {n : ℕ}{i j : Fin (n + 1)} (hij : i < j) : NeZero n := by
   by_contra ne
   have : n = 0 := not_neZero.mp ne
-  have : j.1 < n + 1 := j.isLt
-  have : i.1 ≥ 0 := Nat.zero_le ↑i
   omega
 
 variable {R : Type u} [CommRing R] (L : Type v) [AddCommGroup L] [Module R L] (f : L →ₗ[R] R) (n : ℕ)
@@ -111,7 +109,6 @@ lemma step2 {x : Fin (n + 1) → L} {i j k : Fin (n + 1)} (eq : x i = x j) (neq 
     have i_in : i ∈ {x : Fin (n + 1) | x ≠ k} := Set.mem_setOf.mpr (fun a ↦ hk.1 (id (a.symm)))
     have j_in : j ∈ {x : Fin (n + 1) | x ≠ k} := Set.mem_setOf.mpr (fun a ↦ hk.2 (id (a.symm)))
     have eq : (x ∘ k.succAbove) (aux n k ⟨i, i_in⟩) = (x ∘ k.succAbove) (aux n k ⟨j, j_in⟩) := by
-      show x (k.succAbove (aux n k ⟨i, i_in⟩)) = x (k.succAbove (aux n k ⟨j, j_in⟩))
       simp [left_inv, eq]
     have neq : (aux n k ⟨i, i_in⟩) ≠ (aux n k ⟨j, j_in⟩) := fun eq ↦ by
       have := aux_inj n k eq
@@ -121,26 +118,23 @@ lemma step2 {x : Fin (n + 1) → L} {i j k : Fin (n + 1)} (eq : x i = x j) (neq 
   show (-1) ^ k.1 • (f (x k) • (exteriorPower.ιMulti R n) (x ∘ k.succAbove)) = 0
   simp [this]
 
-lemma sum_of_two (s : Fin n → L)(i j : Fin n) (neq : i ≠ j)(eq0 : ∀ k, k ≠ i ∧ k ≠ j → s k = 0)
+lemma sum_of_two {s : Fin n → L}{i j : Fin n} (neq : i ≠ j)(eq0 : ∀ k, k ≠ i ∧ k ≠ j → s k = 0)
     (sum0 : s i + s j = 0) : finsum s = 0 := by
   by_cases ch : s i = 0
-  · have : ∀ k, s k = 0 := fun k ↦ by
-      by_cases ch2 : k ≠ i ∧ k ≠ j
-      · exact eq0 k ch2
-      · rcases Decidable.or_iff_not_not_and_not.mpr ch2 with ch3 | ch3
-        · rw [ch3, ch]
-        · simpa [ch3, ch] using sum0
-    exact finsum_eq_zero_of_forall_eq_zero this
+  · refine finsum_eq_zero_of_forall_eq_zero fun k ↦ ?_
+    by_cases ch2 : k ≠ i ∧ k ≠ j
+    · exact eq0 k ch2
+    · rcases Decidable.or_iff_not_not_and_not.mpr ch2 with ch3 | ch3
+      · rw [ch3, ch]
+      · simpa [ch3, ch] using sum0
   · have : s.support = {i, j} := by
       refine support_eq_iff.mpr ?_
       constructor
       · intro x hx
         rcases hx with ch3 | ch3
         · simp [ch3, ch]
-        · rw [ch3, ← neg_eq_of_add_eq_zero_right sum0]
-          simp [ch]
-      · intro x hx
-        exact eq0 x (not_or.mp hx)
+        · rwa [ch3, ← neg_eq_of_add_eq_zero_right sum0, ne_eq, neg_eq_zero]
+      · exact fun x hx ↦ eq0 x (not_or.mp hx)
     rw [← finsum_mem_support s, this, finsum_mem_pair neq, sum0]
 
 noncomputable def exteriorPower.contraction_aux : AlternatingMap R L (⋀[R]^n L) (Fin (n + 1)) where
@@ -184,12 +178,9 @@ noncomputable def exteriorPower.contraction_aux : AlternatingMap R L (⋀[R]^n L
     wlog le : i ≤ j
     · simp [neq] at le
       exact this L f n x j i eq.symm neq.symm (le_of_lt le)
-    set s := fun i ↦ ((-1) ^ i.1 * f (x i)) • (ιMulti R n) (x ∘ i.succAbove) with hs
     have hij : i < j := lt_of_le_of_ne le neq
     have : NeZero n := lt_ne hij
-    have sum0 : s i + s j = 0 := step1 L f n eq hij
-    have eq0 : ∀ k, k ≠ i ∧ k ≠ j → s k = 0 := fun k ↦ step2 L f n eq neq
-    exact sum_of_two (↥(⋀[R]^n L)) (n + 1) s i j neq eq0 sum0
+    exact sum_of_two (↥(⋀[R]^n L)) (n + 1) neq (fun k ↦ step2 L f n eq neq) (step1 L f n eq hij)
 
 noncomputable def ModuleCat.exteriorPower.contraction :
     (of R L).exteriorPower (n + 1) ⟶ (of R L).exteriorPower n :=
