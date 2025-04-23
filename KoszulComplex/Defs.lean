@@ -49,7 +49,7 @@ theorem succAbove_comp_cycleIcc [NeZero n] (x : Fin (n + 1) → L) (i j : Fin (n
   exact eq_of_val_eq
     (by simp [← le_antisymm ch2 ch1, val_sub_one_of_ne_zero (ne_zero_of_lt lt)]; omega)
 
-lemma step1 [NeZero n] (x : Fin (n + 1) → L) (i j : Fin (n + 1)) (eq : x i = x j) (lt : i < j) :
+lemma step1 [NeZero n] {x : Fin (n + 1) → L} {i j : Fin (n + 1)} (eq : x i = x j) (lt : i < j) :
     ((-1) ^ i.1 * f (x i)) • (exteriorPower.ιMulti R n) (x ∘ i.succAbove)
     + ((-1) ^ j.1 * f (x j)) • (exteriorPower.ιMulti R n) (x ∘ j.succAbove) = 0 := by
   have ilt : i.1 < n := by omega
@@ -105,7 +105,7 @@ lemma left_inv (k : Fin (n + 1))(i : {x : Fin (n + 1) | x ≠ k}): k.succAbove (
     have : k < i.1 := lt_of_le_of_ne ch (Subtype.coe_prop i).symm
     omega
 
-lemma step2 (x : Fin (n + 1) → L) (i j k : Fin (n + 1)) (eq : x i = x j) (neq : i ≠ j)
+lemma step2 {x : Fin (n + 1) → L} {i j k : Fin (n + 1)} (eq : x i = x j) (neq : i ≠ j)
     (hk : k ≠ i ∧ k ≠ j): ((-1) ^ k.1 * f (x k)) • (exteriorPower.ιMulti R n) (x ∘ k.succAbove) = 0 := by
   have : (exteriorPower.ιMulti R n) (x ∘ k.succAbove) = 0 := by
     have i_in : i ∈ {x : Fin (n + 1) | x ≠ k} := Set.mem_setOf.mpr (fun a ↦ hk.1 (id (a.symm)))
@@ -187,8 +187,8 @@ noncomputable def exteriorPower.contraction_aux : AlternatingMap R L (⋀[R]^n L
     set s := fun i ↦ ((-1) ^ i.1 * f (x i)) • (ιMulti R n) (x ∘ i.succAbove) with hs
     have hij : i < j := lt_of_le_of_ne le neq
     have : NeZero n := lt_ne hij
-    have sum0 : s i + s j = 0 := step1 L f n x i j eq hij
-    have eq0 : ∀ k, k ≠ i ∧ k ≠ j → s k = 0 := fun k ↦ step2 L f n x i j k eq neq
+    have sum0 : s i + s j = 0 := step1 L f n eq hij
+    have eq0 : ∀ k, k ≠ i ∧ k ≠ j → s k = 0 := fun k ↦ step2 L f n eq neq
     exact sum_of_two (↥(⋀[R]^n L)) (n + 1) s i j neq eq0 sum0
 
 noncomputable def ModuleCat.exteriorPower.contraction :
@@ -216,51 +216,51 @@ noncomputable def koszulComplex :
     sorry -/
   sorry
 
--- /-- The Koszul homology $H_n(f)$. -/
--- noncomputable def koszulHomology : ModuleCat R := (koszulComplex L f).homology n
+/-- The Koszul homology $H_n(f)$. -/
+noncomputable def koszulHomology : ModuleCat R := (koszulComplex L f).homology n
 
--- namespace RingTheory.Sequence
+namespace RingTheory.Sequence
 
--- variable (rs : List R)
+variable (rs : List R)
 
--- /-- Let $\mathbf{x} = (x_1, \dots, x_n)$ be a sequence in $R$, consider
---   $f_{\mathbf{x}} : R^n \to R, e_i \mapsto x_i$. The Koszul complex $K_{\bullet}(\mathbf{x})$
---   is defined as $K_{\bullet}(\mathbf{x}) := K_{\bullet}(f_{\mathbf{x}})$. -/
--- noncomputable def koszulComplex : HomologicalComplex (ModuleCat R) (ComplexShape.down ℕ) :=
---   _root_.koszulComplex (Fin rs.length →₀ R) <|
---     Finsupp.linearCombination R (fun (i : Fin rs.length) ↦ rs.get i)
+/-- Let $\mathbf{x} = (x_1, \dots, x_n)$ be a sequence in $R$, consider
+  $f_{\mathbf{x}} : R^n \to R, e_i \mapsto x_i$. The Koszul complex $K_{\bullet}(\mathbf{x})$
+  is defined as $K_{\bullet}(\mathbf{x}) := K_{\bullet}(f_{\mathbf{x}})$. -/
+noncomputable def koszulComplex : HomologicalComplex (ModuleCat R) (ComplexShape.down ℕ) :=
+  _root_.koszulComplex (Fin rs.length →₀ R) <|
+    Finsupp.linearCombination R (fun (i : Fin rs.length) ↦ rs.get i)
 
--- end RingTheory.Sequence
+end RingTheory.Sequence
 
--- section twisted
+section twisted
 
--- --set_option pp.universes true
--- variable {R : Type u} [CommRing R] (M : ModuleCat.{w} R)
+--set_option pp.universes true
+variable {R : Type u} [CommRing R] (M : ModuleCat.{w} R)
 
--- noncomputable def ModuleCat.tensorRight : (ModuleCat.{v} R) ⥤ (ModuleCat.{max v w} R) where
---   obj N := ModuleCat.MonoidalCategory.tensorObj N M
---   map N := ModuleCat.MonoidalCategory.whiskerRight N M
---   map_id _ := ModuleCat.hom_ext (TensorProduct.ext rfl)
---   map_comp _ _ := ModuleCat.hom_ext (TensorProduct.ext rfl)
+noncomputable def ModuleCat.tensorRight : (ModuleCat.{v} R) ⥤ (ModuleCat.{max v w} R) where
+  obj N := ModuleCat.MonoidalCategory.tensorObj N M
+  map N := ModuleCat.MonoidalCategory.whiskerRight N M
+  map_id _ := ModuleCat.hom_ext (TensorProduct.ext rfl)
+  map_comp _ _ := ModuleCat.hom_ext (TensorProduct.ext rfl)
 
--- instance : (ModuleCat.tensorRight M).Additive where
---   map_add := by
---     refine ModuleCat.hom_ext (TensorProduct.ext ?_)
---     simp only [tensorRight, ModuleCat.MonoidalCategory.whiskerRight, hom_add, LinearMap.rTensor_add]
---     rfl
+instance : (ModuleCat.tensorRight M).Additive where
+  map_add := by
+    refine ModuleCat.hom_ext (TensorProduct.ext ?_)
+    simp only [tensorRight, ModuleCat.MonoidalCategory.whiskerRight, hom_add, LinearMap.rTensor_add]
+    rfl
 
--- variable {R : Type u} [CommRing R] (L : Type v) [AddCommGroup L] [Module R L] (f : L →ₗ[R] R)
---   (M : ModuleCat.{w} R) (n : ℕ)
+variable {R : Type u} [CommRing R] (L : Type v) [AddCommGroup L] [Module R L] (f : L →ₗ[R] R)
+  (M : ModuleCat.{w} R) (n : ℕ)
 
--- /-- The Koszul complex with coefficients in $M$ is defined as
---   $K_{\bullet}(f, M) := K_{\bullet}(f)⊗M$. -/
--- noncomputable def twistedKoszulComplex :
---     HomologicalComplex (ModuleCat.{max u v w} R) (ComplexShape.down ℕ) :=
---   ((ModuleCat.tensorRight M).mapHomologicalComplex (ComplexShape.down ℕ)).obj (koszulComplex L f)
+/-- The Koszul complex with coefficients in $M$ is defined as
+  $K_{\bullet}(f, M) := K_{\bullet}(f)⊗M$. -/
+noncomputable def twistedKoszulComplex :
+    HomologicalComplex (ModuleCat.{max u v w} R) (ComplexShape.down ℕ) :=
+  ((ModuleCat.tensorRight M).mapHomologicalComplex (ComplexShape.down ℕ)).obj (koszulComplex L f)
 
--- /-- The Koszul homology with coefficients in $M$ is defined as
---   $H_n(f, M) := H_n(K_{\bullet}(f, M))$. -/
--- noncomputable def twistedKoszulHomology : ModuleCat.{max u v w} R :=
---   (twistedKoszulComplex L f M).homology n
+/-- The Koszul homology with coefficients in $M$ is defined as
+  $H_n(f, M) := H_n(K_{\bullet}(f, M))$. -/
+noncomputable def twistedKoszulHomology : ModuleCat.{max u v w} R :=
+  (twistedKoszulComplex L f M).homology n
 
--- end twisted
+end twisted
