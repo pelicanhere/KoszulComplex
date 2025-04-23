@@ -92,10 +92,7 @@ lemma step1 [NeZero n] (x : Fin (n + 1) → L) (i j : Fin (n + 1)) (eq : x i = x
   have ilt : i.1 < n := by omega
   have jlt : (j - 1).1 < n := by rw [val_sub_one_of_ne_zero (ne_zero_of_lt lt)]; omega
   have hij : castLT i ilt ≤ castLT (j - 1) jlt := by
-    refine le_def.mpr ?_
-    simp only [coe_castLT, val_fin_le]
-    rw [le_def, val_sub_one_of_ne_zero (ne_zero_of_lt lt)]
-    omega
+    simp [le_def, val_sub_one_of_ne_zero (ne_zero_of_lt lt)]; omega
   rw [succAbove_comp_cycleIcc L n x i j eq ilt jlt lt hij]
   show ((-1) ^ i.1 * f (x i)) • ((ιMulti R n) ((x ∘ j.succAbove) ∘ ⇑(cycleIcc hij)))
       + ((-1) ^ j.1 * f (x j)) • (ιMulti R n) (x ∘ j.succAbove) = 0
@@ -114,7 +111,7 @@ lemma step1 [NeZero n] (x : Fin (n + 1) → L) (i j : Fin (n + 1)) (eq : x i = x
 def aux (k : Fin (n + 1)) : {x : Fin (n + 1) | x ≠ k} → Fin n := fun ⟨x, hx⟩ ↦ by
   by_cases ch : x < k
   · exact x.castPred (ne_last_of_lt ch)
-  · push_neg at ch
+  · simp at ch
     exact x.pred (ne_zero_of_lt (lt_of_le_of_ne ch fun a ↦ hx (id (Eq.symm a))))
 
 lemma aux_inj (k : Fin (n + 1)) : Function.Injective (aux n k) := by
@@ -136,25 +133,14 @@ lemma aux_inj (k : Fin (n + 1)) : Function.Injective (aux n k) := by
   simpa [aux, not_lt.mpr ch2, ch1] using eq
 
 lemma left_inv (k : Fin (n + 1))(i : {x : Fin (n + 1) | x ≠ k}): k.succAbove (aux n k i) = i.1 := by
-  have : k ≠ i.1 := (Subtype.coe_prop i).symm
-  by_cases ch : ¬ i.1 < k
-  · simp [aux, ch]
-    rw [succAbove]
-    have : ¬ (i.1.pred (aux._proof_6 n k (i.1) i.property (Eq.mpr_not (Eq.refl (↑i < k)) ch))).castSucc < k := by
-      simp [le_def]
-      simp at ch
-      have : k < i.1 := lt_of_le_of_ne ch this
-      omega
-    simp [this]
-  · simp at ch
-    simp [aux, ch]
-    have : (i.1.castPred (ne_last_of_lt (of_eq_true (eq_true ch)))).castSucc < k := by
-      simp [lt_def, ch]
-    rw [succAbove]
-    have : ((i.1).castPred (ne_last_of_lt (of_eq_true (eq_true ch)))).castSucc = i := by
-      simp
-    rw [this]
-    exact if_pos ch
+  by_cases ch : i.1 < k
+  · simp [aux, ch, succAbove, if_pos ch]
+  · simp only [aux, ne_eq, Set.mem_setOf_eq, ch, ↓reduceDIte]
+    rw [succAbove, if_neg, succ_pred]
+    simp [le_def]
+    simp at ch
+    have : k < i.1 := lt_of_le_of_ne ch (Subtype.coe_prop i).symm
+    omega
 
 lemma step2 [NeZero n] (x : Fin (n + 1) → L) (i j k : Fin (n + 1)) (eq : x i = x j) (neq : i ≠ j)
     (hk : k ≠ i ∧ k ≠ j): ((-1) ^ k.1 * f (x k)) • (ιMulti R n) (x ∘ k.succAbove) = 0 := by
