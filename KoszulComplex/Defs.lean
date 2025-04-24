@@ -14,14 +14,15 @@ lemma lt_ne {n : ℕ}{i j : Fin (n + 1)} (hij : i < j) : NeZero n := by
   have : n = 0 := not_neZero.mp ne
   omega
 
-variable {R : Type u} [CommRing R] (L : Type v) [AddCommGroup L] [Module R L] (f : L →ₗ[R] R) (n : ℕ)
+variable {R : Type u} [CommRing R] (L : Type v) [AddCommGroup L] [Module R L] (f : L →ₗ[R] R)
+  (n : ℕ)
 
 open ExteriorAlgebra ModuleCat CategoryTheory Fin Function
 
 omit [AddCommGroup L] in
-theorem succAbove_comp_cycleIcc [NeZero n] (x : Fin (n + 1) → L) (i j : Fin (n + 1)) (eq : x i = x j)
-    (ilt : i.1 < n) (jlt : (j - 1).1 < n) (lt : i < j) (hij : castLT i ilt ≤ castLT (j - 1) jlt):
-    x ∘ i.succAbove = x ∘ j.succAbove ∘ (cycleIcc hij) := by
+theorem succAbove_comp_cycleIcc [NeZero n] (x : Fin (n + 1) → L) (i j : Fin (n + 1))
+    (eq : x i = x j) (ilt : i.1 < n) (jlt : (j - 1).1 < n) (lt : i < j) (hij : castLT i ilt ≤
+    castLT (j - 1) jlt) : x ∘ i.succAbove = x ∘ j.succAbove ∘ (cycleIcc hij) := by
   ext k
   simp [succAbove]
   by_cases ch : k.castSucc < i
@@ -54,8 +55,10 @@ lemma step1 [NeZero n] {x : Fin (n + 1) → L} {i j : Fin (n + 1)} (eq : x i = x
   rw [succAbove_comp_cycleIcc L n x i j eq ilt jlt lt hij]
   show ((-1) ^ i.1 * f (x i)) • ((exteriorPower.ιMulti R n) ((x ∘ j.succAbove) ∘ ⇑(cycleIcc hij)))
       + ((-1) ^ j.1 * f (x j)) • (exteriorPower.ιMulti R n) (x ∘ j.succAbove) = 0
-  simp only [eq, AlternatingMap.map_perm (exteriorPower.ιMulti R n) (x ∘ j.succAbove) (cycleIcc hij),
-    sign_cycleIcc, coe_castLT, Z_simp R ((j - 1).1 - i.1) ((exteriorPower.ιMulti R n) (x ∘ j.succAbove))]
+  simp only [eq,
+    AlternatingMap.map_perm (exteriorPower.ιMulti R n) (x ∘ j.succAbove) (cycleIcc hij),
+    sign_cycleIcc, coe_castLT,
+    Z_simp R ((j - 1).1 - i.1) ((exteriorPower.ιMulti R n) (x ∘ j.succAbove))]
   have : (-1 : R) ^ i.1 * (-1 : R) ^ ((j - 1).1 - i.1) + (-1) ^ j.1 = 0 := by
     have : i.1 + (j.1 - 1 - i.1) = j.1 - 1 := by omega
     have part: (-1 : R) ^ (j.1 - 1) * (-1) ^ 1 = (-1 : R) ^ (j.1) := by
@@ -65,47 +68,21 @@ lemma step1 [NeZero n] {x : Fin (n + 1) → L} {i j : Fin (n + 1)} (eq : x i = x
   rw [← mul_smul, ← add_smul, mul_assoc]; nth_rw 2 [mul_comm]
   rw [← mul_assoc, ← add_mul, this, zero_mul, zero_smul]
 
-def aux (k : Fin (n + 1)) : {x : Fin (n + 1) | x ≠ k} → Fin n := fun ⟨x, hx⟩ ↦ by
-  by_cases ch : x < k
-  · exact x.castPred (ne_last_of_lt ch)
-  · exact x.pred (ne_zero_of_lt (lt_of_le_of_ne (le_of_not_lt ch) fun a ↦ hx (id (Eq.symm a))))
-
-lemma aux_inj (k : Fin (n + 1)) : Function.Injective (aux n k) := by
-  intro i j eq
-  wlog h : i ≤ j
-  · exact (this n k eq.symm (le_of_lt (lt_of_not_ge h))).symm
-  refine SetCoe.ext ?_
-  by_cases ch1 : j < k
-  · simpa [aux, ch1, Fin.lt_of_le_of_lt h ch1] using eq
-  have ch2 : i ≥ k := by
-    by_contra ch2
-    simp [aux, ch1, not_le.mp ch2] at eq
-    have := congrArg val eq
-    simp at this ch1
-    have : j.1 ≠ k := Subtype.coe_prop j
-    omega
-  simpa [aux, not_lt.mpr ch2, ch1] using eq
-
-lemma left_inv (k : Fin (n + 1))(i : {x : Fin (n + 1) | x ≠ k}): k.succAbove (aux n k i) = i.1 := by
-  by_cases ch : i.1 < k
-  · simp [aux, ch, succAbove, if_pos ch]
-  · simp only [aux, ne_eq, Set.mem_setOf_eq, ch, ↓reduceDIte]
-    rw [succAbove, if_neg, succ_pred]
-    simp [le_def]
-    have : k < i.1 := lt_of_le_of_ne (le_of_not_lt ch) (Subtype.coe_prop i).symm
-    omega
-
 lemma step2 {x : Fin (n + 1) → L} {i j k : Fin (n + 1)} (eq : x i = x j) (neq : i ≠ j) (hk : k ≠ i ∧
     k ≠ j): ((-1) ^ k.1 * f (x k)) • (exteriorPower.ιMulti R n) (x ∘ k.succAbove) = 0 := by
-  have i_in : i ∈ {x : Fin (n + 1) | x ≠ k} := Set.mem_setOf.mpr (fun a ↦ hk.1 (id (a.symm)))
-  have j_in : j ∈ {x : Fin (n + 1) | x ≠ k} := Set.mem_setOf.mpr (fun a ↦ hk.2 (id (a.symm)))
-  have eq : (x ∘ k.succAbove) (aux n k ⟨i, i_in⟩) = (x ∘ k.succAbove) (aux n k ⟨j, j_in⟩) := by
-    simp [left_inv, eq]
-  have neq : (aux n k ⟨i, i_in⟩) ≠ (aux n k ⟨j, j_in⟩) := fun eq ↦ by
-    have := aux_inj n k eq
-    simp[neq] at this
-  rw [AlternatingMap.map_eq_zero_of_eq (exteriorPower.ιMulti R n) (x ∘ k.succAbove) eq neq]
+  have i_in : i ∈ Set.range k.succAbove := by
+    simp [Fin.range_succAbove k, Set.mem_compl_singleton_iff, hk.1.symm]
+  have j_in : j ∈ Set.range k.succAbove := by
+    simp [Fin.range_succAbove k, Set.mem_compl_singleton_iff, hk.2.symm]
+  have neq : (Set.rangeSplitting k.succAbove ⟨i, i_in⟩) ≠
+             (Set.rangeSplitting k.succAbove ⟨j, j_in⟩) := fun eq ↦ by
+    have eq: k.succAbove (Set.rangeSplitting k.succAbove ⟨i, i_in⟩)
+           = k.succAbove (Set.rangeSplitting k.succAbove ⟨j, j_in⟩) := by rw [eq]
+    simp [Set.apply_rangeSplitting k.succAbove] at eq
+    exact neq eq
+  rw [AlternatingMap.map_eq_zero_of_eq (exteriorPower.ιMulti R n) (x ∘ k.succAbove) ?_ neq]
   simp
+  simp [Set.apply_rangeSplitting k.succAbove, eq]
 
 lemma sum_of_two {s : Fin n → L}{i j : Fin n} (neq : i ≠ j)(eq0 : ∀ k, k ≠ i ∧ k ≠ j → s k = 0)
     (sum0 : s i + s j = 0) : finsum s = 0 := by
@@ -156,7 +133,7 @@ noncomputable def exteriorPower.contraction_aux : AlternatingMap R L (⋀[R]^n L
       congr
       funext k
       simp only [comp_apply, ne_eq, succAbove_ne i k, not_false_eq_true, update_of_ne]
-    · simp only [ne_eq, jeqi, not_false_eq_true, update_of_ne, SetLike.val_smul, exteriorPower.ιMulti_apply_coe]
+    · simp only [ne_eq, jeqi, not_false_eq_true, update_of_ne]
       rw [smul_comm]
       congr
       obtain ⟨l, hl⟩ : ∃ l : Fin n, j.succAbove l = i :=
