@@ -159,10 +159,12 @@ noncomputable def koszulComplex :
     HomologicalComplex (ModuleCat.{max u v} R) (ComplexShape.down ℕ) := by
   refine ChainComplex.of (of R L).exteriorPower (ModuleCat.exteriorPower.contraction L f) (fun n ↦ ?_)
   ext x
+  dsimp at x
   simp only [ModuleCat.AlternatingMap.postcomp_apply, ModuleCat.hom_comp, LinearMap.coe_comp,
     Function.comp_apply, ModuleCat.hom_zero, LinearMap.zero_apply]
   unfold ModuleCat.exteriorPower.contraction-- ModuleCat.exteriorPower.contraction_aux
   simp only [ModuleCat.exteriorPower.desc_mk]
+  simp only [exteriorPower.desc, hom_ofHom]
   /- rw [iaob]
   -- need map_finsum
   have : (ModuleCat.Hom.hom (ModuleCat.exteriorPower.desc (ModuleCat.exteriorPower.contraction_aux L f n)))
