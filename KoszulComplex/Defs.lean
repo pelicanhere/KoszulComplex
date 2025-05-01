@@ -5,9 +5,9 @@ universe u v w
 
 lemma Z_simp (R : Type u) [Ring R] {L : Type v} [AddCommGroup L] [Module R L]
   (k : ℕ) (x : L): (-1 : ℤˣ) ^ k • x = ((-1 : R) ^ k) • x := by
-  rcases Nat.even_or_odd k with ch | ch
-  · simp [ch]
-  · simp [ch]
+  rcases Nat.even_or_odd k with ch | ch <;>
+    simp only [ch, Even.neg_pow, one_pow, one_smul, ch, Odd.neg_one_pow, Units.neg_smul,
+    neg_smul]
 
 lemma lt_ne {n : ℕ}{i j : Fin (n + 1)} (hij : i < j) : NeZero n := by
   by_contra ne
@@ -157,14 +157,25 @@ noncomputable def ModuleCat.exteriorPower.contraction :
 
 noncomputable def koszulComplex :
     HomologicalComplex (ModuleCat.{max u v} R) (ComplexShape.down ℕ) := by
-  refine ChainComplex.of (of R L).exteriorPower (ModuleCat.exteriorPower.contraction L f) (fun n ↦ ?_)
-  ext x
-  dsimp at x
+  refine ChainComplex.of (of R L).exteriorPower
+    (ModuleCat.exteriorPower.contraction L f) (fun m ↦ ?_)
+  ext g
+  dsimp at g
   simp only [ModuleCat.AlternatingMap.postcomp_apply, ModuleCat.hom_comp, LinearMap.coe_comp,
-    Function.comp_apply, ModuleCat.hom_zero, LinearMap.zero_apply]
-  unfold ModuleCat.exteriorPower.contraction-- ModuleCat.exteriorPower.contraction_aux
-  simp only [ModuleCat.exteriorPower.desc_mk]
-  simp only [exteriorPower.desc, hom_ofHom]
+    Function.comp_apply, ModuleCat.hom_zero, LinearMap.zero_apply,
+    ModuleCat.exteriorPower.contraction]
+  simp_rw [ModuleCat.exteriorPower.desc_mk, exteriorPower.desc, hom_ofHom]
+  convert_to
+    (exteriorPower.alternatingMapLinearEquiv (exteriorPower.contraction_aux L f m))
+    (∑ᶠ (i : Fin (m + 1 + 1)), ((-1) ^ ↑i * f (g i)) • (exteriorPower.ιMulti R (m + 1))
+      (g ∘ i.succAbove)) = 0
+  simp only [finsum_eq_sum_of_fintype, map_sum, map_smul,
+    exteriorPower.alternatingMapLinearEquiv_apply_ιMulti]
+  show ∑ x, ((-1) ^ ↑x * f (g x)) • (∑ᶠ i : Fin (m + 1),
+    ((- 1 : R) ^ i.1 * (f ((g ∘ x.succAbove) i))) • exteriorPower.ιMulti R m
+      ((g ∘ x.succAbove).comp i.succAbove)) = 0
+  simp only [Function.comp_apply, finsum_eq_sum_of_fintype]
+
   /- rw [iaob]
   -- need map_finsum
   have : (ModuleCat.Hom.hom (ModuleCat.exteriorPower.desc (ModuleCat.exteriorPower.contraction_aux L f n)))
