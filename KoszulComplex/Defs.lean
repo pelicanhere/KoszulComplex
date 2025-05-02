@@ -154,6 +154,7 @@ noncomputable def ModuleCat.exteriorPower.contraction :
 
 #check AlgebraicTopology.AlternatingFaceMapComplex.d_squared
 #check map_sum
+#check Module.projective_def
 
 noncomputable def koszulComplex :
     HomologicalComplex (ModuleCat.{max u v} R) (ComplexShape.down ℕ) := by
@@ -171,10 +172,16 @@ noncomputable def koszulComplex :
       (g ∘ i.succAbove)) = 0
   simp only [finsum_eq_sum_of_fintype, map_sum, map_smul,
     exteriorPower.alternatingMapLinearEquiv_apply_ιMulti]
-  show ∑ x, ((-1) ^ ↑x * f (g x)) • (∑ᶠ i : Fin (m + 1),
-    ((- 1 : R) ^ i.1 * (f ((g ∘ x.succAbove) i))) • exteriorPower.ιMulti R m
-      ((g ∘ x.succAbove).comp i.succAbove)) = 0
+  show ∑ j, ((-1) ^ ↑j * f (g j)) • (∑ᶠ i : Fin (m + 1),
+    ((- 1 : R) ^ i.1 * (f ((g ∘ j.succAbove) i))) • exteriorPower.ιMulti R m
+      ((g ∘ j.succAbove).comp i.succAbove)) = 0
   simp only [Function.comp_apply, finsum_eq_sum_of_fintype]
+  conv => enter [1, 2, j, 2, 2, i, 2, 2]; rw [comp_assoc]
+  conv => enter [1, 2, j]; rw [Finset.smul_sum]
+  conv =>
+    enter [1, 2, j, 2, i]
+    rw [← smul_assoc, smul_eq_mul, ← mul_assoc, mul_comm _ ((- 1) ^ i.1), ← mul_assoc,
+      ← pow_add, mul_assoc]
 
   /- rw [iaob]
   -- need map_finsum
