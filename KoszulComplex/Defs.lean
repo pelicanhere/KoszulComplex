@@ -218,20 +218,21 @@ noncomputable def koszulComplex :
       mul_smul (- 1), neg_smul, neg_neg, one_smul, add_comm]
   rw [(Fintype.sum_prod_type _).symm]
   set left_down := {(j, i) : Fin (m + 1 + 1) × Fin (m + 1) | j.1 ≤ i.1}
-  set t : left_down → Set (Fin (m + 1 + 1) × Fin (m + 1)) :=
-    fun α ↦ {(α.1.2.succ, ⟨α.1.1, Nat.lt_of_le_of_lt α.2 α.1.2.isLt⟩)}
-  have pair : Pairwise (Function.onFun Disjoint t) := by
-    refine subsingleton_setOf_mem_iff_pairwise_disjoint.mp ?_
-    intro (j, i)
-    simp only [Set.mem_singleton_iff, Prod.mk.injEq, t]
-    intro x hx y hy
-    simp only [Set.mem_setOf_eq, t] at hy hx
-    ext
-    · exact mk.inj_iff.1 <| hx.2.symm.trans hy.2
-    · exact congrArg val <| Fin.succ_injective _ <| hx.1.symm.trans hy.1
+  set t : left_down →
+    Set (Fin (m + 1 + 1) × Fin (m + 1)) :=
+    fun α ↦ {α.1, (α.1.2.succ, ⟨α.1.1, Nat.lt_of_le_of_lt α.2 α.1.2.isLt⟩)}
+  have pair : Pairwise (Disjoint on t) := by
+    intro x y hxy
+    simp only [Set.disjoint_insert_right, Set.mem_insert_iff, Set.mem_singleton_iff, not_or,
+      Set.disjoint_singleton_right, Prod.mk.injEq, succ_inj, mk.injEq, not_and, t]
+    split_ands
+    · exact Subtype.coe_ne_coe.mpr (id (Ne.symm hxy))
+    · sorry
+    · sorry
+    · sorry
   have all_fin : ∀ i : left_down, (t i).Finite := by
     intro i
-    simp only [Set.finite_singleton, t]
+    simp only [Set.finite_singleton, Set.Finite.insert, t]
   have union : ⋃ i, t i = Set.univ := by
     sorry
   have := finsum_mem_iUnion pair all_fin (f := h₀)
