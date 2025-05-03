@@ -152,10 +152,6 @@ noncomputable def ModuleCat.exteriorPower.contraction :
     (of R L).exteriorPower (n + 1) ⟶ (of R L).exteriorPower n :=
   desc (exteriorPower.contraction_aux L f n)
 
-#check AlgebraicTopology.AlternatingFaceMapComplex.d_squared
-#check map_sum
-#check Module.projective_def
-
 noncomputable def koszulComplex :
     HomologicalComplex (ModuleCat.{max u v} R) (ComplexShape.down ℕ) := by
   refine ChainComplex.of (of R L).exteriorPower
@@ -180,9 +176,18 @@ noncomputable def koszulComplex :
   conv => enter [1, 2, j]; rw [Finset.smul_sum]
   conv =>
     enter [1, 2, j, 2, i]
-    rw [← smul_assoc, smul_eq_mul, ← mul_assoc, mul_comm _ ((- 1) ^ i.1), ← mul_assoc,
-      ← pow_add, mul_assoc]
-
+    rw [← smul_assoc, smul_eq_mul, ← mul_assoc, mul_comm _ ((- 1) ^ i.1),
+      ← mul_assoc, ← pow_add, mul_assoc]
+  set h₀ : Fin (m + 1 + 1) × Fin (m + 1) → ↥(⋀[R]^m L) := fun α ↦
+    ((-1) ^ (α.2.1 + α.1.1) * (f (g α.1) * f (g (α.1.succAbove α.2)))) •
+        (exteriorPower.ιMulti R m) (g ∘ α.1.succAbove ∘ α.2.succAbove) with def_h₀
+  calc
+    _ = ∑ j : Fin (m + 1 + 1), ∑ i : Fin (m + 1), h₀ (j, i) :=
+      Finset.sum_congr rfl (fun _ _ ↦ Finset.sum_congr rfl (fun _ _ ↦ rfl))
+    _ = ∑ α : (Fin (m + 1 + 1) × Fin (m + 1)), h₀ α := by
+      rw [Fintype.sum_prod_type]
+    _ = _ := by
+      sorry
   /- rw [iaob]
   -- need map_finsum
   have : (ModuleCat.Hom.hom (ModuleCat.exteriorPower.desc (ModuleCat.exteriorPower.contraction_aux L f n)))
@@ -191,7 +196,6 @@ noncomputable def koszulComplex :
     --∑ᶠ (i : Fin (n + 1 + 1)), ((-1 : R) ^ i.1 * f (x i)) • ((ModuleCat.Hom.hom (ModuleCat.exteriorPower.desc (ModuleCat.exteriorPower.contraction_aux L f n))) ((exteriorPower.ιMulti R (n + 1)) (x ∘ i.succAbove)))
      := by
     sorry -/
-  sorry
 
 /-- The Koszul homology $H_n(f)$. -/
 noncomputable def koszulHomology : ModuleCat R := (koszulComplex L f).homology n
