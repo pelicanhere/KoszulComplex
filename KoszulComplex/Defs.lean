@@ -227,9 +227,35 @@ noncomputable def koszulComplex :
       Set.disjoint_singleton_right, Prod.mk.injEq, succ_inj, mk.injEq, not_and, t]
     split_ands
     · exact Subtype.coe_ne_coe.mpr (id (Ne.symm hxy))
-    · sorry
-    · sorry
-    · sorry
+    · intro h
+      rw [Prod.ext_iff] at h
+      simp only [t] at h
+      have y_prop := y.2
+      dsimp [left_down] at y_prop
+      rw [h.1, h.2] at y_prop
+      replace y_prop : (x.1).2.succ.1 ≤ x.1.1.1 := y_prop
+      have x_prop := x.2
+      dsimp [left_down] at x_prop
+      replace y_prop := y_prop.trans x_prop
+      simp only [val_succ, add_le_iff_nonpos_right, nonpos_iff_eq_zero, one_ne_zero, t,
+        left_down] at y_prop
+    · intro h
+      rw [Prod.ext_iff] at h
+      simp only [t, left_down] at h
+      have x_prop := x.2
+      dsimp [left_down] at x_prop
+      rw [h.1.symm, h.2.symm] at x_prop
+      replace x_prop : (y.1).2.succ.1 ≤ y.1.1.1 := x_prop
+      have y_prop := y.2
+      dsimp [left_down] at y_prop
+      replace y_prop := x_prop.trans y_prop
+      simp only [val_succ, add_le_iff_nonpos_right, nonpos_iff_eq_zero, one_ne_zero, t,
+        left_down] at y_prop
+    · intro h₁ h₂
+      absurd hxy
+      ext
+      · exact h₂.symm
+      · exact congrArg val h₁.symm
   have all_fin : ∀ i : left_down, (t i).Finite := by
     intro i
     simp only [Set.finite_singleton, Set.Finite.insert, t]
@@ -237,10 +263,9 @@ noncomputable def koszulComplex :
     sorry
   have := finsum_mem_iUnion pair all_fin (f := h₀)
   simp only [union, Set.mem_univ, finsum_true, t, finsum_eq_sum_of_fintype] at this
-  rw [this]
   have eq_zero : (0 : ↥(⋀[R]^m L)) = ∑ i : left_down, 0 := by
     simp only [Finset.sum_const_zero, t, left_down]
-  rw [eq_zero]
+  rw [this, eq_zero]
   apply Finset.sum_congr rfl
   intro x _
   simp only [Set.mem_singleton_iff, t, left_down]
