@@ -158,7 +158,6 @@ lemma aux1 {m} {j : Fin (m + 1 + 1)} {i : Fin (m + 1)} (hij : j.1 ≤ i.1) :
   ext k
   simp only [Function.comp_apply, succAbove, castSucc_lt_succ_iff]
   split_ifs <;> try omega
-
   all_goals (expose_names; try simp[h, h_1, h_2, h_3, hij]; try contradiction)
   · have : k.1 + 1 < j.1 := h_3
     have : i.1 ≤ k.1 := not_lt.1 h_2; omega
@@ -260,7 +259,24 @@ noncomputable def koszulComplex :
     intro i
     simp only [Set.finite_singleton, Set.Finite.insert, t]
   have union : ⋃ i, t i = Set.univ := by
-    sorry
+    ext x
+    constructor
+    · exact fun a ↦ trivial
+    · intro hx
+      by_cases hx' : x.1 ≤ x.2
+      · simp only [Set.iUnion_coe_set, Set.mem_iUnion, Prod.exists, t, left_down]
+        use x.1, x.2,
+          (by simpa only [Prod.mk.eta, Set.mem_setOf_eq, coe_eq_castSucc, t, left_down]
+            using hx')
+        simp only [Prod.mk.eta, Set.mem_insert_iff, Set.mem_singleton_iff, true_or, t, left_down]
+      · simp only [Set.iUnion_coe_set, Set.mem_iUnion, Prod.exists, t, left_down]
+        simp only [coe_eq_castSucc, not_le, t, left_down] at hx'
+        replace hx' : x.2.1 < x.1 := hx'
+        use x.2, x.1.pred (ne_of_val_ne <| Nat.ne_zero_of_lt hx')
+        simp only [coe_eq_castSucc, succ_pred, coe_castSucc, Fin.eta, Prod.mk.eta,
+          Set.mem_insert_iff, Set.mem_singleton_iff, or_true, Set.mem_setOf_eq, coe_pred,
+          exists_prop, and_true, t, left_down]
+        omega
   have := finsum_mem_iUnion pair all_fin (f := h₀)
   simp only [union, Set.mem_univ, finsum_true, t, finsum_eq_sum_of_fintype] at this
   have eq_zero : (0 : ↥(⋀[R]^m L)) = ∑ i : left_down, 0 := by
