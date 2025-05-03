@@ -182,6 +182,7 @@ lemma aux2 {m} {j : Fin (m + 1 + 1)} {i : Fin (m + 1)} (hij : j.1 ≤ i.1) :
     simp only [succAbove, ite_eq_right_iff]
     intro (h : i.1 < j.1)
     omega
+#check finsum_mem_iUnion
 
 noncomputable def koszulComplex :
     HomologicalComplex (ModuleCat.{max u v} R) (ComplexShape.down ℕ) := by
@@ -223,9 +224,35 @@ noncomputable def koszulComplex :
     rw [aux1 hij, aux2 hij, this, mul_comm (f (g j)), ← add_assoc,
       pow_add _ (j.1 + i.1), pow_one, mul_comm _ (- 1), mul_assoc,
       mul_smul (- 1), neg_smul, neg_neg, one_smul, add_comm]
-
   rw [(Fintype.sum_prod_type _).symm]
+  set left_down := {(j, i) : Fin (m + 1 + 1) × Fin (m + 1) | j.1 ≤ i.1}
+  set t : left_down → Set (Fin (m + 1 + 1) × Fin (m + 1)) :=
+    fun α ↦ {(α.1.2.succ, ⟨α.1.1, Nat.lt_of_le_of_lt α.2 α.1.2.isLt⟩)}
+  have pair : Pairwise (Function.onFun Disjoint t) := by
+    refine subsingleton_setOf_mem_iff_pairwise_disjoint.mp ?_
+    intro (j, i)
+    simp only [Set.mem_singleton_iff, Prod.mk.injEq, t]
+    intro x hx y hy
+    simp only [Set.mem_setOf_eq, t] at hy hx
+    ext
+    · exact mk.inj_iff.1 <| hx.2.symm.trans hy.2
+    · exact congrArg val <| Fin.succ_injective _ <| hx.1.symm.trans hy.1
+  have all_fin : ∀ i : left_down, (t i).Finite := by
+    intro i
+    simp only [Set.finite_singleton, t]
+  have union : ⋃ i, t i = Set.univ := by
+    sorry
+  have := finsum_mem_iUnion pair all_fin (f := h₀)
+  simp only [union, Set.mem_univ, finsum_true, t, finsum_eq_sum_of_fintype] at this
+  rw [this]
+  have eq_zero : (0 : ↥(⋀[R]^m L)) = ∑ i : left_down, 0 := by
+    simp only [Finset.sum_const_zero, t, left_down]
+  rw [eq_zero]
+  apply Finset.sum_congr rfl
+  intro x _
+  simp only [Set.mem_singleton_iff, t, left_down]
 
+  #check tsum_finset_bUnion_disjoint
   sorry
   /- rw [iaob]
   -- need map_finsum
