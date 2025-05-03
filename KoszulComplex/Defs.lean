@@ -178,7 +178,6 @@ noncomputable def koszulComplex :
   refine ChainComplex.of (of R L).exteriorPower
     (ModuleCat.exteriorPower.contraction L f) (fun m ↦ ?_)
   ext g
-  dsimp only at g
   simp only [ModuleCat.AlternatingMap.postcomp_apply, ModuleCat.hom_comp, LinearMap.coe_comp,
     Function.comp_apply, ModuleCat.hom_zero, LinearMap.zero_apply,
     ModuleCat.exteriorPower.contraction]
@@ -222,15 +221,15 @@ noncomputable def koszulComplex :
     split_ands
     · exact Subtype.coe_ne_coe.2 hxy.symm
     · intro h
-      simp only [Prod.ext_iff, t] at h
+      simp only [Prod.ext_iff] at h
       have y_prop := y.2
-      dsimp only [Set.mem_setOf_eq, left_down, t] at y_prop
+      dsimp only [Set.mem_setOf_eq, left_down] at y_prop
       rw [h.1, h.2] at y_prop
       exact False.elim <| (Nat.not_succ_le_self ↑(x.1).2) <| y_prop.trans x.2
     · intro h
-      simp only [Prod.ext_iff, t, left_down] at h
+      simp only [Prod.ext_iff] at h
       have x_prop := x.2
-      dsimp only [Set.mem_setOf_eq, left_down, t] at x_prop
+      dsimp only [Set.mem_setOf_eq, left_down] at x_prop
       rw [h.1.symm, h.2.symm] at x_prop
       exact False.elim <| (Nat.not_succ_le_self ↑(y.1).2) <| x_prop.trans y.2
     · intro h₁ h₂
@@ -238,14 +237,12 @@ noncomputable def koszulComplex :
       ext
       · exact h₂.symm
       · exact congrArg val h₁.symm
-  have all_fin (i : left_down) : (t i).Finite := by
-    simp only [Set.finite_singleton, Set.Finite.insert, t]
   have union : ⋃ i, t i = Set.univ := by
     ext x
     constructor
-    · exact fun a ↦ trivial
-    · intro hx
-      simp only [Set.iUnion_coe_set, Set.mem_iUnion, Prod.exists, t, left_down]
+    · exact fun _ ↦ trivial
+    · simp only [Set.mem_univ, Set.iUnion_coe_set, Set.mem_iUnion, Prod.exists,
+        forall_const, left_down, t]
       by_cases hx' : x.1 ≤ x.2
       · use x.1, x.2,
           (by simpa only [Prod.mk.eta, Set.mem_setOf_eq, coe_eq_castSucc, t, left_down]
@@ -257,7 +254,8 @@ noncomputable def koszulComplex :
           Set.mem_insert_iff, Set.mem_singleton_iff, or_true, Set.mem_setOf_eq, coe_pred,
           exists_prop, and_true, t, left_down]
         exact Nat.le_sub_one_of_lt hx'
-  have := finsum_mem_iUnion pair all_fin (f := h₀)
+  have := finsum_mem_iUnion pair
+    (fun i ↦ by simp only [Set.finite_singleton, Set.Finite.insert, t]) (f := h₀)
   simp only [union, Set.mem_univ, finsum_true, t, finsum_eq_sum_of_fintype] at this
   have eq_zero : (0 : ↥(⋀[R]^m L)) = ∑ i : left_down, 0 := by
     simp only [Finset.sum_const_zero, t, left_down]
@@ -266,12 +264,12 @@ noncomputable def koszulComplex :
   calc
     _ = ∑ᶠ (i : Fin (m + 1 + 1) × Fin (m + 1))
       (_ : i ∈ ({↑x, ((x.1).2.succ,
-        ⟨↑(x.1).1, Nat.lt_of_le_of_lt x.property (x.1).2.isLt⟩)} :
+        ⟨↑(x.1).1, Nat.lt_of_le_of_lt x.2 (x.1).2.isLt⟩)} :
           Set (Fin (m + 1 + 1) × Fin (m + 1))).toFinset), h₀ i := by
       simp only [← finsum_eq_sum_of_fintype, Set.mem_insert_iff, Set.mem_singleton_iff,
         Set.toFinset_insert, Set.toFinset_singleton, Finset.mem_insert,
         Finset.mem_singleton, t, left_down]
-    _ = h₀ x.1 + h₀ ((x.1).2.succ, ⟨↑(x.1).1, Nat.lt_of_le_of_lt x.property (x.1).2.isLt⟩) := by
+    _ = h₀ x.1 + h₀ ((x.1).2.succ, ⟨↑(x.1).1, Nat.lt_of_le_of_lt x.2 (x.1).2.isLt⟩) := by
       simp only [Set.toFinset_insert, Set.toFinset_singleton, t, left_down]
       rw [finsum_mem_finset_eq_sum h₀ _, Finset.sum_pair]
       intro h
