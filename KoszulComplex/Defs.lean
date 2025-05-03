@@ -171,16 +171,14 @@ lemma aux1 {m} {j : Fin (m + 1 + 1)} {i : Fin (m + 1)} (hij : j.1 ≤ i.1) :
 lemma aux2 {m} {j : Fin (m + 1 + 1)} {i : Fin (m + 1)} (hij : j.1 ≤ i.1) :
   j.succAbove i = i.succ := by
     simp only [succAbove, ite_eq_right_iff]
-    intro (h : i.1 < j.1)
-    omega
-#check finsum_mem_iUnion
+    exact fun (h : i.1 < j.1) ↦ False.elim <| (Nat.not_lt.2 hij) h
 
 noncomputable def koszulComplex :
     HomologicalComplex (ModuleCat.{max u v} R) (ComplexShape.down ℕ) := by
   refine ChainComplex.of (of R L).exteriorPower
     (ModuleCat.exteriorPower.contraction L f) (fun m ↦ ?_)
   ext g
-  dsimp at g
+  dsimp only at g
   simp only [ModuleCat.AlternatingMap.postcomp_apply, ModuleCat.hom_comp, LinearMap.coe_comp,
     Function.comp_apply, ModuleCat.hom_zero, LinearMap.zero_apply,
     ModuleCat.exteriorPower.contraction]
@@ -210,105 +208,79 @@ noncomputable def koszulComplex :
     simp only [h₀, val_succ]
     have : i.succ.succAbove ⟨j, Nat.lt_of_le_of_lt hij i.isLt⟩ = j := by
       simp only [succAbove, castSucc_mk, Fin.eta, succ_mk, ite_eq_left_iff, not_lt]
-      intro (h : i.1 + 1 ≤ j.1)
-      omega
+      exact fun (h : i.1 + 1 ≤ j.1) ↦ False.elim <| (Nat.not_le_of_lt h) hij
     rw [aux1 hij, aux2 hij, this, mul_comm (f (g j)), ← add_assoc,
       pow_add _ (j.1 + i.1), pow_one, mul_comm _ (- 1), mul_assoc,
       mul_smul (- 1), neg_smul, neg_neg, one_smul, add_comm]
-  rw [(Fintype.sum_prod_type _).symm]
   set left_down := {(j, i) : Fin (m + 1 + 1) × Fin (m + 1) | j.1 ≤ i.1}
-  set t : left_down →
-    Set (Fin (m + 1 + 1) × Fin (m + 1)) :=
+  set t : left_down → Set (Fin (m + 1 + 1) × Fin (m + 1)) :=
     fun α ↦ {α.1, (α.1.2.succ, ⟨α.1.1, Nat.lt_of_le_of_lt α.2 α.1.2.isLt⟩)}
   have pair : Pairwise (Disjoint on t) := by
     intro x y hxy
     simp only [Set.disjoint_insert_right, Set.mem_insert_iff, Set.mem_singleton_iff, not_or,
       Set.disjoint_singleton_right, Prod.mk.injEq, succ_inj, mk.injEq, not_and, t]
     split_ands
-    · exact Subtype.coe_ne_coe.mpr (id (Ne.symm hxy))
+    · exact Subtype.coe_ne_coe.2 hxy.symm
     · intro h
-      rw [Prod.ext_iff] at h
-      simp only [t] at h
+      simp only [Prod.ext_iff, t] at h
       have y_prop := y.2
-      dsimp [left_down] at y_prop
+      dsimp only [Set.mem_setOf_eq, left_down, t] at y_prop
       rw [h.1, h.2] at y_prop
-      replace y_prop : (x.1).2.succ.1 ≤ x.1.1.1 := y_prop
-      have x_prop := x.2
-      dsimp [left_down] at x_prop
-      replace y_prop := y_prop.trans x_prop
-      simp only [val_succ, add_le_iff_nonpos_right, nonpos_iff_eq_zero, one_ne_zero, t,
-        left_down] at y_prop
+      exact False.elim <| (Nat.not_succ_le_self ↑(x.1).2) <| y_prop.trans x.2
     · intro h
-      rw [Prod.ext_iff] at h
-      simp only [t, left_down] at h
+      simp only [Prod.ext_iff, t, left_down] at h
       have x_prop := x.2
-      dsimp [left_down] at x_prop
+      dsimp only [Set.mem_setOf_eq, left_down, t] at x_prop
       rw [h.1.symm, h.2.symm] at x_prop
-      replace x_prop : (y.1).2.succ.1 ≤ y.1.1.1 := x_prop
-      have y_prop := y.2
-      dsimp [left_down] at y_prop
-      replace y_prop := x_prop.trans y_prop
-      simp only [val_succ, add_le_iff_nonpos_right, nonpos_iff_eq_zero, one_ne_zero, t,
-        left_down] at y_prop
+      exact False.elim <| (Nat.not_succ_le_self ↑(y.1).2) <| x_prop.trans y.2
     · intro h₁ h₂
       absurd hxy
       ext
       · exact h₂.symm
       · exact congrArg val h₁.symm
-  have all_fin : ∀ i : left_down, (t i).Finite := by
-    intro i
+  have all_fin (i : left_down) : (t i).Finite := by
     simp only [Set.finite_singleton, Set.Finite.insert, t]
   have union : ⋃ i, t i = Set.univ := by
     ext x
     constructor
     · exact fun a ↦ trivial
     · intro hx
+      simp only [Set.iUnion_coe_set, Set.mem_iUnion, Prod.exists, t, left_down]
       by_cases hx' : x.1 ≤ x.2
-      · simp only [Set.iUnion_coe_set, Set.mem_iUnion, Prod.exists, t, left_down]
-        use x.1, x.2,
+      · use x.1, x.2,
           (by simpa only [Prod.mk.eta, Set.mem_setOf_eq, coe_eq_castSucc, t, left_down]
             using hx')
         simp only [Prod.mk.eta, Set.mem_insert_iff, Set.mem_singleton_iff, true_or, t, left_down]
-      · simp only [Set.iUnion_coe_set, Set.mem_iUnion, Prod.exists, t, left_down]
-        simp only [coe_eq_castSucc, not_le, t, left_down] at hx'
-        replace hx' : x.2.1 < x.1 := hx'
+      · simp only [coe_eq_castSucc, not_le, t, left_down] at hx'
         use x.2, x.1.pred (ne_of_val_ne <| Nat.ne_zero_of_lt hx')
         simp only [coe_eq_castSucc, succ_pred, coe_castSucc, Fin.eta, Prod.mk.eta,
           Set.mem_insert_iff, Set.mem_singleton_iff, or_true, Set.mem_setOf_eq, coe_pred,
           exists_prop, and_true, t, left_down]
-        omega
+        exact Nat.le_sub_one_of_lt hx'
   have := finsum_mem_iUnion pair all_fin (f := h₀)
   simp only [union, Set.mem_univ, finsum_true, t, finsum_eq_sum_of_fintype] at this
   have eq_zero : (0 : ↥(⋀[R]^m L)) = ∑ i : left_down, 0 := by
     simp only [Finset.sum_const_zero, t, left_down]
-  rw [this, eq_zero]
-  apply Finset.sum_congr rfl
-  intro x _
-  simp only [Set.mem_singleton_iff, t, left_down]
-  rw [← finsum_eq_sum_of_fintype]
-  convert_to
-    ∑ᶠ (i : Fin (m + 1 + 1) × Fin (m + 1))
+  rw [(Fintype.sum_prod_type _).symm, this, eq_zero]
+  apply Finset.sum_congr rfl (fun x _ ↦ ?_)
+  calc
+    _ = ∑ᶠ (i : Fin (m + 1 + 1) × Fin (m + 1))
       (_ : i ∈ ({↑x, ((x.1).2.succ,
         ⟨↑(x.1).1, Nat.lt_of_le_of_lt x.property (x.1).2.isLt⟩)} :
-          Set (Fin (m + 1 + 1) × Fin (m + 1))).toFinset), h₀ i = 0
-  simp only [Set.mem_setOf_eq, Set.mem_insert_iff, Set.mem_singleton_iff, Set.toFinset_insert,
-    Set.toFinset_singleton, Finset.mem_insert, Finset.mem_singleton, t, left_down]
-  rw [finsum_mem_finset_eq_sum h₀ _]
-  simp only [Set.toFinset_insert, Set.toFinset_singleton, t, left_down]
-  calc
+          Set (Fin (m + 1 + 1) × Fin (m + 1))).toFinset), h₀ i := by
+      simp only [← finsum_eq_sum_of_fintype, Set.mem_insert_iff, Set.mem_singleton_iff,
+        Set.toFinset_insert, Set.toFinset_singleton, Finset.mem_insert,
+        Finset.mem_singleton, t, left_down]
     _ = h₀ x.1 + h₀ ((x.1).2.succ, ⟨↑(x.1).1, Nat.lt_of_le_of_lt x.property (x.1).2.isLt⟩) := by
-      rw [Finset.sum_pair]
+      simp only [Set.toFinset_insert, Set.toFinset_singleton, t, left_down]
+      rw [finsum_mem_finset_eq_sum h₀ _, Finset.sum_pair]
       intro h
-      rw [Prod.ext_iff] at h
-      simp only [Set.mem_setOf_eq, t, left_down] at h
+      simp only [Prod.ext_iff, Set.mem_setOf_eq, t, left_down] at h
       have := h.2
-      simp_rw [h.1] at this
-      apply_fun (·.1) at this
+      simp_rw [h.1, ← Fin.val_inj] at this
       simp only [val_succ, Nat.left_eq_add, one_ne_zero, t, left_down] at this
     _ = _ := by
-      replace eq_ij := eq_ij x.2
-      rw [eq_ij]
-      simp only [neg_add_cancel, t, left_down]
+      simp only [eq_ij x.2, neg_add_cancel, t, left_down]
 
 /-- The Koszul homology $H_n(f)$. -/
 noncomputable def koszulHomology : ModuleCat R := (koszulComplex L f).homology n
