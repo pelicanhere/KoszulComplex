@@ -285,17 +285,30 @@ noncomputable def koszulComplex :
   apply Finset.sum_congr rfl
   intro x _
   simp only [Set.mem_singleton_iff, t, left_down]
-
-  #check tsum_finset_bUnion_disjoint
-  sorry
-  /- rw [iaob]
-  -- need map_finsum
-  have : (ModuleCat.Hom.hom (ModuleCat.exteriorPower.desc (ModuleCat.exteriorPower.contraction_aux L f n)))
-    (∑ᶠ (i : Fin (n + 1 + 1)), ((-1 : R) ^ i.1 * f (x i)) • (exteriorPower.ιMulti R (n + 1)) (x ∘ i.succAbove)) =
-    ∑ᶠ (i : Fin (n + 1 + 1)), (ModuleCat.Hom.hom (ModuleCat.exteriorPower.desc (ModuleCat.exteriorPower.contraction_aux L f n))) (((-1 : R) ^ i.1 * f (x i)) • (exteriorPower.ιMulti R (n + 1)) (x ∘ i.succAbove))
-    --∑ᶠ (i : Fin (n + 1 + 1)), ((-1 : R) ^ i.1 * f (x i)) • ((ModuleCat.Hom.hom (ModuleCat.exteriorPower.desc (ModuleCat.exteriorPower.contraction_aux L f n))) ((exteriorPower.ιMulti R (n + 1)) (x ∘ i.succAbove)))
-     := by
-    sorry -/
+  rw [← finsum_eq_sum_of_fintype]
+  convert_to
+    ∑ᶠ (i : Fin (m + 1 + 1) × Fin (m + 1))
+      (_ : i ∈ ({↑x, ((x.1).2.succ,
+        ⟨↑(x.1).1, Nat.lt_of_le_of_lt x.property (x.1).2.isLt⟩)} :
+          Set (Fin (m + 1 + 1) × Fin (m + 1))).toFinset), h₀ i = 0
+  simp only [Set.mem_setOf_eq, Set.mem_insert_iff, Set.mem_singleton_iff, Set.toFinset_insert,
+    Set.toFinset_singleton, Finset.mem_insert, Finset.mem_singleton, t, left_down]
+  rw [finsum_mem_finset_eq_sum h₀ _]
+  simp only [Set.toFinset_insert, Set.toFinset_singleton, t, left_down]
+  calc
+    _ = h₀ x.1 + h₀ ((x.1).2.succ, ⟨↑(x.1).1, Nat.lt_of_le_of_lt x.property (x.1).2.isLt⟩) := by
+      rw [Finset.sum_pair]
+      intro h
+      rw [Prod.ext_iff] at h
+      simp only [Set.mem_setOf_eq, t, left_down] at h
+      have := h.2
+      simp_rw [h.1] at this
+      apply_fun (·.1) at this
+      simp only [val_succ, Nat.left_eq_add, one_ne_zero, t, left_down] at this
+    _ = _ := by
+      replace eq_ij := eq_ij x.2
+      rw [eq_ij]
+      simp only [neg_add_cancel, t, left_down]
 
 /-- The Koszul homology $H_n(f)$. -/
 noncomputable def koszulHomology : ModuleCat R := (koszulComplex L f).homology n
