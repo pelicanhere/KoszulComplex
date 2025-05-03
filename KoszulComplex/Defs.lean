@@ -180,14 +180,11 @@ noncomputable def koszulComplex :
       ← mul_assoc, ← pow_add, mul_assoc]
   set h₀ : Fin (m + 1 + 1) × Fin (m + 1) → ↥(⋀[R]^m L) := fun α ↦
     ((-1) ^ (α.2.1 + α.1.1) * (f (g α.1) * f (g (α.1.succAbove α.2)))) •
-        (exteriorPower.ιMulti R m) (g ∘ α.1.succAbove ∘ α.2.succAbove) with def_h₀
-  calc
-    _ = ∑ j : Fin (m + 1 + 1), ∑ i : Fin (m + 1), h₀ (j, i) :=
-      Finset.sum_congr rfl (fun _ _ ↦ Finset.sum_congr rfl (fun _ _ ↦ rfl))
-    _ = ∑ α : (Fin (m + 1 + 1) × Fin (m + 1)), h₀ α := by
-      rw [Fintype.sum_prod_type]
-    _ = _ := by
-      sorry
+        (exteriorPower.ιMulti R m) (g ∘ α.1.succAbove ∘ α.2.succAbove)
+  convert_to ∑ j : Fin (m + 1 + 1), ∑ i : Fin (m + 1), h₀ (j, i) = 0
+  rw [(Fintype.sum_prod_type _).symm]
+
+  sorry
   /- rw [iaob]
   -- need map_finsum
   have : (ModuleCat.Hom.hom (ModuleCat.exteriorPower.desc (ModuleCat.exteriorPower.contraction_aux L f n)))
