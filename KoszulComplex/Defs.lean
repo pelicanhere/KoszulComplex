@@ -158,22 +158,14 @@ lemma aux1 {m} {j : Fin (m + 1 + 1)} {i : Fin (m + 1)} (hij : j.1 ≤ i.1) :
   ext k
   simp only [Function.comp_apply, succAbove, castSucc_lt_succ_iff]
   split_ifs <;> try omega
-  all_goals (expose_names; try rfl)
-  · exact False.elim (h_3 h)
+
+  all_goals (expose_names; try simp[h, h_1, h_2, h_3, hij]; try contradiction)
   · have : k.1 + 1 < j.1 := h_3
     have : i.1 ≤ k.1 := not_lt.1 h_2; omega
   · have : k.1 < i.1 := Nat.lt_of_lt_of_le h hij
     have : i.1 ≤ k.1 := not_lt.1 h_2; omega
-  · have : k.1 < j.1 := h
-    have : j.1 < k.1 := Nat.lt_of_le_of_lt hij <| not_le.1 h_1; omega
-  · have : j.1 ≤ k.1 := not_lt.1 h
-    have : k.1 < j.1 := h_3; omega
-  · have : k.1 + 1 ≤ i.1 := h_1
+  · have : k.1 < i.1 := Nat.lt_of_lt_of_le h hij
     have : i.1 ≤ k.1 := not_lt.1 h_2; omega
-  · have : j.1 ≤ k.1 := not_lt.1 h
-    have : k.1 < j.1 := h_3; omega
-  · have : i.1 < k.1 + 1 := not_le.1 h_1
-    have : k.1 < i.1 := h_2; omega
   · have : j.1 ≤ k.1 := not_lt.1 h
     have : k.1 + 1 < j.1 := h_3; omega
 
