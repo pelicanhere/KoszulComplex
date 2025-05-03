@@ -153,30 +153,29 @@ noncomputable def ModuleCat.exteriorPower.contraction :
   desc (exteriorPower.contraction_aux L f n)
 
 lemma aux1 {m} {j : Fin (m + 1 + 1)} {i : Fin (m + 1)} (hij : j.1 ≤ i.1) :
-  i.succ.succAbove ∘ (⟨j, by omega⟩ : Fin (m + 1)).succAbove = j.succAbove ∘ i.succAbove := by
-    ext k
-    simp only [Function.comp_apply, succAbove, castSucc_lt_succ_iff]
-    split_ifs <;> try omega
-    all_goals expose_names
-    · exact False.elim (h_3 h)
-    · have : k.1 + 1 < j.1 := h_3
-      have : i.1 ≤ k.1 := not_lt.1 h_2; omega
-    · have : k.1 < i.1 := Nat.lt_of_lt_of_le h hij
-      have : i.1 ≤ k.1 := not_lt.1 h_2; omega
-    · rfl
-    · have : k.1 < j.1 := h
-      have : j.1 < k.1 := Nat.lt_of_le_of_lt hij <| not_le.1 h_1; omega
-    · have : j.1 ≤ k.1 := not_lt.1 h
-      have : k.1 < j.1 := h_3; omega
-    · rfl
-    · have : k.1 + 1 ≤ i.1 := h_1
-      have : i.1 ≤ k.1 := not_lt.1 h_2; omega
-    · have : j.1 ≤ k.1 := not_lt.1 h
-      have : k.1 < j.1 := h_3; omega
-    · have : i.1 < k.1 + 1 := not_le.1 h_1
-      have : k.1 < i.1 := h_2; omega
-    · have : j.1 ≤ k.1 := not_lt.1 h
-      have : k.1 + 1 < j.1 := h_3; omega
+  i.succ.succAbove ∘ (⟨j, Nat.lt_of_le_of_lt hij i.isLt⟩ : Fin (m + 1)).succAbove =
+    j.succAbove ∘ i.succAbove := by
+  ext k
+  simp only [Function.comp_apply, succAbove, castSucc_lt_succ_iff]
+  split_ifs <;> try omega
+  all_goals (expose_names; try rfl)
+  · exact False.elim (h_3 h)
+  · have : k.1 + 1 < j.1 := h_3
+    have : i.1 ≤ k.1 := not_lt.1 h_2; omega
+  · have : k.1 < i.1 := Nat.lt_of_lt_of_le h hij
+    have : i.1 ≤ k.1 := not_lt.1 h_2; omega
+  · have : k.1 < j.1 := h
+    have : j.1 < k.1 := Nat.lt_of_le_of_lt hij <| not_le.1 h_1; omega
+  · have : j.1 ≤ k.1 := not_lt.1 h
+    have : k.1 < j.1 := h_3; omega
+  · have : k.1 + 1 ≤ i.1 := h_1
+    have : i.1 ≤ k.1 := not_lt.1 h_2; omega
+  · have : j.1 ≤ k.1 := not_lt.1 h
+    have : k.1 < j.1 := h_3; omega
+  · have : i.1 < k.1 + 1 := not_le.1 h_1
+    have : k.1 < i.1 := h_2; omega
+  · have : j.1 ≤ k.1 := not_lt.1 h
+    have : k.1 + 1 < j.1 := h_3; omega
 
 lemma aux2 {m} {j : Fin (m + 1 + 1)} {i : Fin (m + 1)} (hij : j.1 ≤ i.1) :
   j.succAbove i = i.succ := by
@@ -213,17 +212,18 @@ noncomputable def koszulComplex :
   set h₀ : Fin (m + 1 + 1) × Fin (m + 1) → ↥(⋀[R]^m L) := fun α ↦
     ((-1) ^ (α.2.1 + α.1.1) * (f (g α.1) * f (g (α.1.succAbove α.2)))) •
         (exteriorPower.ιMulti R m) (g ∘ α.1.succAbove ∘ α.2.succAbove)
-  convert_to ∑ j : Fin (m + 1 + 1), ∑ i : Fin (m + 1), h₀ (j, i) = 0
-  have {j : Fin (m + 1 + 1)} {i : Fin (m + 1)} (hij : j.1 ≤ i.1) :
-      h₀ (j, i) = - h₀ (i.succ, (⟨j, by omega⟩ : Fin (m + 1))) := by
+  show ∑ j : Fin (m + 1 + 1), ∑ i : Fin (m + 1), h₀ (j, i) = 0
+  have eq_ij {j : Fin (m + 1 + 1)} {i : Fin (m + 1)} (hij : j.1 ≤ i.1) :
+      h₀ (j, i) = - h₀ (i.succ, (⟨j, Nat.lt_of_le_of_lt hij i.isLt⟩ : Fin (m + 1))) := by
     simp only [h₀, val_succ]
-    have : i.succ.succAbove ⟨j, by omega⟩ = j := by
+    have : i.succ.succAbove ⟨j, Nat.lt_of_le_of_lt hij i.isLt⟩ = j := by
       simp only [succAbove, castSucc_mk, Fin.eta, succ_mk, ite_eq_left_iff, not_lt]
       intro (h : i.1 + 1 ≤ j.1)
       omega
     rw [aux1 hij, aux2 hij, this, mul_comm (f (g j)), ← add_assoc,
       pow_add _ (j.1 + i.1), pow_one, mul_comm _ (- 1), mul_assoc,
       mul_smul (- 1), neg_smul, neg_neg, one_smul, add_comm]
+
   rw [(Fintype.sum_prod_type _).symm]
 
   sorry
