@@ -1,7 +1,7 @@
 import Mathlib
 import KoszulComplex.cycleIcc
 
-universe u v w
+universe w v u
 
 lemma Z_simp (R : Type u) [Ring R] {L : Type v} [AddCommGroup L] [Module R L]
   (k : ℕ) (x : L): (-1 : ℤˣ) ^ k • x = ((-1 : R) ^ k) • x := by
@@ -311,7 +311,7 @@ instance : (ModuleCat.tensorRight M).Additive where
     rfl
 
 variable {R : Type u} [CommRing R] (L : Type v) [AddCommGroup L] [Module R L] (f : L →ₗ[R] R)
-  (M : ModuleCat.{w} R) (n : ℕ)
+  (M : ModuleCat.{w} R) (n : ℕ) (rs : List R)
 
 /-- The Koszul complex with coefficients in $M$ is defined as
   $K_{\bullet}(f, M) := K_{\bullet}(f)⊗M$. -/
@@ -324,4 +324,30 @@ noncomputable def twistedKoszulComplex :
 noncomputable def twistedKoszulHomology : ModuleCat.{max u v w} R :=
   (twistedKoszulComplex L f M).homology n
 
+noncomputable def RingTheory.Sequence.twistedKoszulComplex :
+    HomologicalComplex (ModuleCat R) (ComplexShape.down ℕ) :=
+  _root_.twistedKoszulComplex (Fin rs.length →₀ R)
+    (Finsupp.linearCombination R (fun (i : Fin rs.length) ↦ rs.get i)) M
+
 end twisted
+
+namespace RingTheory.Sequence
+
+section ind
+
+variable {R : Type u} [CommRing R] (M : ModuleCat.{u} R) (rs : List R) (hr : IsWeaklyRegular M rs)
+  (h : rs ≠ [])
+
+instance : (MonoidalCategory.curriedTensor (ModuleCat R)).Additive where
+  map_add := by
+    intro M N f g
+    simp only [MonoidalCategory.curriedTensor, MonoidalPreadditive.add_whiskerRight]
+    rfl
+
+noncomputable def twistedKoszulComplex_head_tensor_tail_iso :
+  HomologicalComplex.tensorObj (twistedKoszulComplex M [rs.head h]) (twistedKoszulComplex M rs.tail)
+  ≅ twistedKoszulComplex M rs := sorry
+
+end ind
+
+end RingTheory.Sequence
