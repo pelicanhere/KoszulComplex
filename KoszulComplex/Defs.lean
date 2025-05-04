@@ -269,12 +269,8 @@ variable (rs : List R)
 /-- Let $\mathbf{x} = (x_1, \dots, x_n)$ be a sequence in $R$, consider
   $f_{\mathbf{x}} : R^n \to R, e_i \mapsto x_i$. The Koszul complex $K_{\bullet}(\mathbf{x})$
   is defined as $K_{\bullet}(\mathbf{x}) := K_{\bullet}(f_{\mathbf{x}})$. -/
-
 noncomputable def koszulComplex : HomologicalComplex (ModuleCat R) (ComplexShape.down ℕ) :=
-  sorry -- I have change `variable (L : Type*)` to `variable {L : Type*}`, and there are some issue
-  -- here, I have no idea to fix it.
-  -- _root_.koszulComplex (Fin rs.length →₀ R) <|
-  -- Finsupp.linearCombination R (fun (i : Fin rs.length) ↦ rs.get i)
+  _root_.koszulComplex (Finsupp.linearCombination R (fun (i : Fin rs.length) ↦ rs.get i))
 
 end RingTheory.Sequence
 
