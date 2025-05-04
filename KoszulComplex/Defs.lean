@@ -1,7 +1,7 @@
 import Mathlib
 import KoszulComplex.cycleIcc
 
-universe u v w
+universe w v u
 
 lemma Z_simp (R : Type u) [Ring R] {L : Type v} [AddCommGroup L] [Module R L]
   (k : ℕ) (x : L): (-1 : ℤˣ) ^ k • x = ((-1 : R) ^ k) • x := by
@@ -204,16 +204,14 @@ noncomputable def koszulComplex :
     split_ands
     · exact Subtype.coe_ne_coe.2 hxy.symm
     · intro h
-      simp only [Prod.ext_iff] at h
       have y_prop := y.2
       dsimp only [Set.mem_setOf_eq, left_down] at y_prop
-      rw [h.1, h.2] at y_prop
+      rw [(Prod.ext_iff.1 h).1, (Prod.ext_iff.1 h).2] at y_prop
       exact False.elim <| (Nat.not_succ_le_self ↑(x.1).2) <| y_prop.trans x.2
     · intro h
-      simp only [Prod.ext_iff] at h
       have x_prop := x.2
       dsimp only [Set.mem_setOf_eq, left_down] at x_prop
-      rw [h.1.symm, h.2.symm] at x_prop
+      rw [(Prod.ext_iff.1 h).1.symm, (Prod.ext_iff.1 h).2.symm] at x_prop
       exact False.elim <| (Nat.not_succ_le_self ↑(y.1).2) <| x_prop.trans y.2
     · intro h₁ h₂
       absurd hxy
@@ -228,20 +226,19 @@ noncomputable def koszulComplex :
         forall_const, left_down, t]
       by_cases hx' : x.1 ≤ x.2
       · use x.1, x.2,
-          (by simpa only [Prod.mk.eta, Set.mem_setOf_eq, coe_eq_castSucc, t, left_down]
-            using hx')
-        simp only [Prod.mk.eta, Set.mem_insert_iff, Set.mem_singleton_iff, true_or, t, left_down]
-      · simp only [coe_eq_castSucc, not_le, t, left_down] at hx'
+          (by simpa only [Prod.mk.eta, Set.mem_setOf_eq, coe_eq_castSucc] using hx')
+        simp only [Prod.mk.eta, Set.mem_insert_iff, Set.mem_singleton_iff, true_or]
+      · simp only [coe_eq_castSucc, not_le] at hx'
         use x.2, x.1.pred (ne_of_val_ne <| Nat.ne_zero_of_lt hx')
         simp only [coe_eq_castSucc, succ_pred, coe_castSucc, Fin.eta, Prod.mk.eta,
           Set.mem_insert_iff, Set.mem_singleton_iff, or_true, Set.mem_setOf_eq, coe_pred,
-          exists_prop, and_true, t, left_down]
+          exists_prop, and_true]
         exact Nat.le_sub_one_of_lt hx'
   have := finsum_mem_iUnion pair
     (fun i ↦ by simp only [Set.finite_singleton, Set.Finite.insert, t]) (f := h₀)
-  simp only [union, Set.mem_univ, finsum_true, t, finsum_eq_sum_of_fintype] at this
-  have eq_zero : (0 : ↥(⋀[R]^m L)) = ∑ i : left_down, 0 := by
-    simp only [Finset.sum_const_zero, t, left_down]
+  simp only [union, Set.mem_univ, finsum_true, finsum_eq_sum_of_fintype] at this
+  have eq_zero : (0 : ↥(⋀[R]^m L)) = ∑ i : left_down, 0 :=
+    (congrArg _ Finset.sum_const_zero).mpr rfl
   rw [(Fintype.sum_prod_type _).symm, this, eq_zero]
   apply Finset.sum_congr rfl (fun x _ ↦ ?_)
   calc
@@ -251,17 +248,17 @@ noncomputable def koszulComplex :
           Set (Fin (m + 1 + 1) × Fin (m + 1))).toFinset), h₀ i := by
       simp only [← finsum_eq_sum_of_fintype, Set.mem_insert_iff, Set.mem_singleton_iff,
         Set.toFinset_insert, Set.toFinset_singleton, Finset.mem_insert,
-        Finset.mem_singleton, t, left_down]
+        Finset.mem_singleton, t]
     _ = h₀ x.1 + h₀ ((x.1).2.succ, ⟨↑(x.1).1, Nat.lt_of_le_of_lt x.2 (x.1).2.isLt⟩) := by
-      simp only [Set.toFinset_insert, Set.toFinset_singleton, t, left_down]
-      rw [finsum_mem_finset_eq_sum h₀ _, Finset.sum_pair]
+      rw [Set.toFinset_insert, Set.toFinset_singleton, finsum_mem_finset_eq_sum h₀ _,
+        Finset.sum_pair]
       intro h
-      simp only [Prod.ext_iff, Set.mem_setOf_eq, t, left_down] at h
+      simp only [Prod.ext_iff, Set.mem_setOf_eq] at h
       have := h.2
       simp_rw [h.1, ← Fin.val_inj] at this
-      simp only [val_succ, Nat.left_eq_add, one_ne_zero, t, left_down] at this
+      simp only [val_succ, Nat.left_eq_add, one_ne_zero] at this
     _ = _ := by
-      simp only [eq_ij x.2, neg_add_cancel, t, left_down]
+      rw [eq_ij x.2, neg_add_cancel]
 
 /-- The Koszul homology $H_n(f)$. -/
 noncomputable def koszulHomology : ModuleCat R := (koszulComplex L f).homology n
@@ -297,7 +294,7 @@ instance : (ModuleCat.tensorRight M).Additive where
     rfl
 
 variable {R : Type u} [CommRing R] (L : Type v) [AddCommGroup L] [Module R L] (f : L →ₗ[R] R)
-  (M : ModuleCat.{w} R) (n : ℕ)
+  (M : ModuleCat.{w} R) (n : ℕ) (rs : List R)
 
 /-- The Koszul complex with coefficients in $M$ is defined as
   $K_{\bullet}(f, M) := K_{\bullet}(f)⊗M$. -/
@@ -310,4 +307,30 @@ noncomputable def twistedKoszulComplex :
 noncomputable def twistedKoszulHomology : ModuleCat.{max u v w} R :=
   (twistedKoszulComplex L f M).homology n
 
+noncomputable def RingTheory.Sequence.twistedKoszulComplex :
+    HomologicalComplex (ModuleCat R) (ComplexShape.down ℕ) :=
+  _root_.twistedKoszulComplex (Fin rs.length →₀ R)
+    (Finsupp.linearCombination R (fun (i : Fin rs.length) ↦ rs.get i)) M
+
 end twisted
+
+namespace RingTheory.Sequence
+
+section ind
+
+variable {R : Type u} [CommRing R] (M : ModuleCat.{u} R) (rs : List R) (hr : IsWeaklyRegular M rs)
+  (h : rs ≠ [])
+
+instance : (MonoidalCategory.curriedTensor (ModuleCat R)).Additive where
+  map_add := by
+    intro M N f g
+    simp only [MonoidalCategory.curriedTensor, MonoidalPreadditive.add_whiskerRight]
+    rfl
+
+noncomputable def twistedKoszulComplex_head_tensor_tail_iso :
+  HomologicalComplex.tensorObj (twistedKoszulComplex M [rs.head h]) (twistedKoszulComplex M rs.tail)
+  ≅ twistedKoszulComplex M rs := sorry
+
+end ind
+
+end RingTheory.Sequence
