@@ -68,8 +68,9 @@ lemma step1 [NeZero n] {x : Fin (n + 1) → L} {i j : Fin (n + 1)} (eq : x i = x
   rw [← mul_smul, ← add_smul, mul_assoc]; nth_rw 2 [mul_comm]
   rw [← mul_assoc, ← add_mul, this, zero_mul, zero_smul]
 
-lemma step2 {x : Fin (n + 1) → L} {i j k : Fin (n + 1)} (eq : x i = x j) (neq : i ≠ j) (hk : k ≠ i ∧
-    k ≠ j): ((-1) ^ k.1 * f (x k)) • (exteriorPower.ιMulti R n) (x ∘ k.succAbove) = 0 := by
+lemma step2 {x : Fin (n + 1) → L} {i j : Fin (n + 1)} (eq : x i = x j) (neq : i ≠ j) :
+    ∀ (k : Fin (n + 1)), k ≠ i ∧ k ≠ j → ((-1) ^ k.1 * f (x k)) • (exteriorPower.ιMulti R n)
+    (x ∘ k.succAbove) = 0 := fun k hk ↦ by
   have i_in : i ∈ Set.range k.succAbove := by
     simp [Fin.range_succAbove k, Set.mem_compl_singleton_iff, hk.1.symm]
   have j_in : j ∈ Set.range k.succAbove := by
@@ -83,25 +84,6 @@ lemma step2 {x : Fin (n + 1) → L} {i j k : Fin (n + 1)} (eq : x i = x j) (neq 
   rw [AlternatingMap.map_eq_zero_of_eq (exteriorPower.ιMulti R n) (x ∘ k.succAbove) ?_ neq]
   simp
   simp [Set.apply_rangeSplitting k.succAbove, eq]
-
-lemma sum_of_two {s : Fin n → L}{i j : Fin n} (neq : i ≠ j)(eq0 : ∀ k, k ≠ i ∧ k ≠ j → s k = 0)
-    (sum0 : s i + s j = 0) : finsum s = 0 := by
-  by_cases ch : s i = 0
-  · refine finsum_eq_zero_of_forall_eq_zero fun k ↦ ?_
-    by_cases ch2 : k ≠ i ∧ k ≠ j
-    · exact eq0 k ch2
-    · rcases Decidable.or_iff_not_not_and_not.mpr ch2 with ch3 | ch3
-      · rw [ch3, ch]
-      · simpa [ch3, ch] using sum0
-  · have : s.support = {i, j} := by
-      refine support_eq_iff.mpr ?_
-      constructor
-      · intro x hx
-        rcases hx with ch3 | ch3
-        · simp [ch3, ch]
-        · rwa [ch3, ← neg_eq_of_add_eq_zero_right sum0, ne_eq, neg_eq_zero]
-      · exact fun x hx ↦ eq0 x (not_or.mp hx)
-    rw [← finsum_mem_support s, this, finsum_mem_pair neq, sum0]
 
 noncomputable def exteriorPower.contraction_aux : AlternatingMap R L (⋀[R]^n L) (Fin (n + 1)) where
   toFun x := ∑ᶠ i : Fin (n + 1),
@@ -146,7 +128,8 @@ noncomputable def exteriorPower.contraction_aux : AlternatingMap R L (⋀[R]^n L
       exact this L f n x j i eq.symm neq.symm (le_of_lt le)
     have hij : i < j := lt_of_le_of_ne le neq
     have : NeZero n := lt_ne hij
-    exact sum_of_two (↥(⋀[R]^n L)) (n + 1) neq (fun k ↦ step2 L f n eq neq) (step1 L f n eq hij)
+    rw [finsum_eq_sum_of_fintype, Fintype.sum_eq_add i j neq (step2 L f n eq neq)]
+    exact step1 L f n eq hij
 
 noncomputable def ModuleCat.exteriorPower.contraction :
     (of R L).exteriorPower (n + 1) ⟶ (of R L).exteriorPower n :=
