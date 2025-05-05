@@ -335,8 +335,8 @@ namespace RingTheory.Sequence
 
 section ind
 
-variable {R : Type u} [CommRing R] (M : ModuleCat.{u} R) (rs : List R) (hr : IsWeaklyRegular M rs)
-  (h : rs ≠ [])
+variable {R : Type u} [CommRing R] (M : ModuleCat.{u} R) (a : R) (rs : List R)
+--(hr : IsWeaklyRegular M rs)
 
 instance : (MonoidalCategory.curriedTensor (ModuleCat R)).Additive where
   map_add := by
@@ -344,9 +344,9 @@ instance : (MonoidalCategory.curriedTensor (ModuleCat R)).Additive where
     simp only [MonoidalCategory.curriedTensor, MonoidalPreadditive.add_whiskerRight]
     rfl
 
-noncomputable def twistedKoszulComplex_head_tensor_tail_iso :
-  HomologicalComplex.tensorObj (twistedKoszulComplex M [rs.head h]) (twistedKoszulComplex M rs.tail)
-  ≅ twistedKoszulComplex M rs := sorry
+noncomputable def twistedKoszulComplex_iso_cons :
+  HomologicalComplex.tensorObj (twistedKoszulComplex M [a]) (twistedKoszulComplex M rs)
+  ≅ twistedKoszulComplex M (a :: rs) := sorry
 
 end ind
 
