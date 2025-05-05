@@ -14,7 +14,7 @@ lemma lt_ne {n : ℕ}{i j : Fin (n + 1)} (hij : i < j) : NeZero n := by
   have : n = 0 := not_neZero.mp ne
   omega
 
-variable {R : Type u} [CommRing R] (L : Type v) [AddCommGroup L] [Module R L] (f : L →ₗ[R] R)
+variable {R : Type u} [CommRing R] {L : Type v} [AddCommGroup L] [Module R L] (f : L →ₗ[R] R)
   (n : ℕ)
 
 open ExteriorAlgebra ModuleCat CategoryTheory Fin Function
@@ -52,7 +52,7 @@ lemma step1 [NeZero n] {x : Fin (n + 1) → L} {i j : Fin (n + 1)} (eq : x i = x
   have jlt : (j - 1).1 < n := by rw [val_sub_one_of_ne_zero (ne_zero_of_lt lt)]; omega
   have hij : castLT i ilt ≤ castLT (j - 1) jlt := by
     simp [le_def, val_sub_one_of_ne_zero (ne_zero_of_lt lt)]; omega
-  rw [succAbove_comp_cycleIcc L n x i j eq ilt jlt lt hij]
+  rw [succAbove_comp_cycleIcc n x i j eq ilt jlt lt hij]
   show ((-1) ^ i.1 * f (x i)) • ((exteriorPower.ιMulti R n) ((x ∘ j.succAbove) ∘ ⇑(cycleIcc hij)))
       + ((-1) ^ j.1 * f (x j)) • (exteriorPower.ιMulti R n) (x ∘ j.succAbove) = 0
   simp only [eq,
@@ -68,8 +68,9 @@ lemma step1 [NeZero n] {x : Fin (n + 1) → L} {i j : Fin (n + 1)} (eq : x i = x
   rw [← mul_smul, ← add_smul, mul_assoc]; nth_rw 2 [mul_comm]
   rw [← mul_assoc, ← add_mul, this, zero_mul, zero_smul]
 
-lemma step2 {x : Fin (n + 1) → L} {i j k : Fin (n + 1)} (eq : x i = x j) (neq : i ≠ j) (hk : k ≠ i ∧
-    k ≠ j): ((-1) ^ k.1 * f (x k)) • (exteriorPower.ιMulti R n) (x ∘ k.succAbove) = 0 := by
+lemma step2 {x : Fin (n + 1) → L} {i j : Fin (n + 1)} (eq : x i = x j) (neq : i ≠ j) :
+    ∀ (k : Fin (n + 1)), k ≠ i ∧ k ≠ j → ((-1) ^ k.1 * f (x k)) • (exteriorPower.ιMulti R n)
+    (x ∘ k.succAbove) = 0 := fun k hk ↦ by
   have i_in : i ∈ Set.range k.succAbove := by
     simp [Fin.range_succAbove k, Set.mem_compl_singleton_iff, hk.1.symm]
   have j_in : j ∈ Set.range k.succAbove := by
@@ -83,25 +84,6 @@ lemma step2 {x : Fin (n + 1) → L} {i j k : Fin (n + 1)} (eq : x i = x j) (neq 
   rw [AlternatingMap.map_eq_zero_of_eq (exteriorPower.ιMulti R n) (x ∘ k.succAbove) ?_ neq]
   simp
   simp [Set.apply_rangeSplitting k.succAbove, eq]
-
-lemma sum_of_two {s : Fin n → L}{i j : Fin n} (neq : i ≠ j)(eq0 : ∀ k, k ≠ i ∧ k ≠ j → s k = 0)
-    (sum0 : s i + s j = 0) : finsum s = 0 := by
-  by_cases ch : s i = 0
-  · refine finsum_eq_zero_of_forall_eq_zero fun k ↦ ?_
-    by_cases ch2 : k ≠ i ∧ k ≠ j
-    · exact eq0 k ch2
-    · rcases Decidable.or_iff_not_not_and_not.mpr ch2 with ch3 | ch3
-      · rw [ch3, ch]
-      · simpa [ch3, ch] using sum0
-  · have : s.support = {i, j} := by
-      refine support_eq_iff.mpr ?_
-      constructor
-      · intro x hx
-        rcases hx with ch3 | ch3
-        · simp [ch3, ch]
-        · rwa [ch3, ← neg_eq_of_add_eq_zero_right sum0, ne_eq, neg_eq_zero]
-      · exact fun x hx ↦ eq0 x (not_or.mp hx)
-    rw [← finsum_mem_support s, this, finsum_mem_pair neq, sum0]
 
 noncomputable def exteriorPower.contraction_aux : AlternatingMap R L (⋀[R]^n L) (Fin (n + 1)) where
   toFun x := ∑ᶠ i : Fin (n + 1),
@@ -143,14 +125,14 @@ noncomputable def exteriorPower.contraction_aux : AlternatingMap R L (⋀[R]^n L
   map_eq_zero_of_eq' x i j eq neq := by
     wlog le : i ≤ j
     · simp [neq] at le
-      exact this L f n x j i eq.symm neq.symm (le_of_lt le)
+      exact this f n x j i eq.symm neq.symm (le_of_lt le)
     have hij : i < j := lt_of_le_of_ne le neq
     have : NeZero n := lt_ne hij
-    exact sum_of_two (↥(⋀[R]^n L)) (n + 1) neq (fun k ↦ step2 L f n eq neq) (step1 L f n eq hij)
+    rw [finsum_eq_sum_of_fintype, Fintype.sum_eq_add i j neq (step2 f n eq neq), step1 f n eq hij]
 
 noncomputable def ModuleCat.exteriorPower.contraction :
     (of R L).exteriorPower (n + 1) ⟶ (of R L).exteriorPower n :=
-  desc (exteriorPower.contraction_aux L f n)
+  desc (exteriorPower.contraction_aux f n)
 
 lemma aux1 {m} {j : Fin (m + 1 + 1)} {i : Fin (m + 1)} (hij : j.1 ≤ i.1) :
   i.succ.succAbove ∘ (⟨j, Nat.lt_of_le_of_lt hij i.isLt⟩ : Fin (m + 1)).succAbove =
@@ -176,14 +158,14 @@ lemma aux2 {m} {j : Fin (m + 1 + 1)} {i : Fin (m + 1)} (hij : j.1 ≤ i.1) :
 noncomputable def koszulComplex :
     HomologicalComplex (ModuleCat.{max u v} R) (ComplexShape.down ℕ) := by
   refine ChainComplex.of (of R L).exteriorPower
-    (ModuleCat.exteriorPower.contraction L f) (fun m ↦ ?_)
+    (ModuleCat.exteriorPower.contraction f) (fun m ↦ ?_)
   ext g
   simp only [ModuleCat.AlternatingMap.postcomp_apply, ModuleCat.hom_comp, LinearMap.coe_comp,
     Function.comp_apply, ModuleCat.hom_zero, LinearMap.zero_apply,
     ModuleCat.exteriorPower.contraction]
   simp_rw [ModuleCat.exteriorPower.desc_mk, exteriorPower.desc, hom_ofHom]
   convert_to
-    (exteriorPower.alternatingMapLinearEquiv (exteriorPower.contraction_aux L f m))
+    (exteriorPower.alternatingMapLinearEquiv (exteriorPower.contraction_aux f m))
     (∑ᶠ (i : Fin (m + 1 + 1)), ((-1) ^ ↑i * f (g i)) • (exteriorPower.ιMulti R (m + 1))
       (g ∘ i.succAbove)) = 0
   simp only [finsum_eq_sum_of_fintype, map_sum, map_smul,
@@ -278,7 +260,7 @@ noncomputable def koszulComplex :
       rw [eq_ij x.2, neg_add_cancel]
 
 /-- The Koszul homology $H_n(f)$. -/
-noncomputable def koszulHomology : ModuleCat R := (koszulComplex L f).homology n
+noncomputable def koszulHomology : ModuleCat R := (koszulComplex f).homology n
 
 namespace RingTheory.Sequence
 
@@ -288,8 +270,7 @@ variable (rs : List R)
   $f_{\mathbf{x}} : R^n \to R, e_i \mapsto x_i$. The Koszul complex $K_{\bullet}(\mathbf{x})$
   is defined as $K_{\bullet}(\mathbf{x}) := K_{\bullet}(f_{\mathbf{x}})$. -/
 noncomputable def koszulComplex : HomologicalComplex (ModuleCat R) (ComplexShape.down ℕ) :=
-  _root_.koszulComplex (Fin rs.length →₀ R) <|
-    Finsupp.linearCombination R (fun (i : Fin rs.length) ↦ rs.get i)
+  _root_.koszulComplex (Finsupp.linearCombination R (fun (i : Fin rs.length) ↦ rs.get i))
 
 end RingTheory.Sequence
 
@@ -317,7 +298,7 @@ variable {R : Type u} [CommRing R] (L : Type v) [AddCommGroup L] [Module R L] (f
   $K_{\bullet}(f, M) := K_{\bullet}(f)⊗M$. -/
 noncomputable def twistedKoszulComplex :
     HomologicalComplex (ModuleCat.{max u v w} R) (ComplexShape.down ℕ) :=
-  ((ModuleCat.tensorRight M).mapHomologicalComplex (ComplexShape.down ℕ)).obj (koszulComplex L f)
+  ((ModuleCat.tensorRight M).mapHomologicalComplex (ComplexShape.down ℕ)).obj (koszulComplex f)
 
 /-- The Koszul homology with coefficients in $M$ is defined as
   $H_n(f, M) := H_n(K_{\bullet}(f, M))$. -/
