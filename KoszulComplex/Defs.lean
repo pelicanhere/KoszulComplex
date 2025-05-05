@@ -321,7 +321,7 @@ variable {R : Type u} [CommRing R] (M : ModuleCat.{u} R) (a : R) (rs : List R)
 
 instance : (MonoidalCategory.curriedTensor (ModuleCat R)).Additive where
   map_add := by
-    intro M N f g
+    intros
     simp only [MonoidalCategory.curriedTensor, MonoidalPreadditive.add_whiskerRight]
     rfl
 
