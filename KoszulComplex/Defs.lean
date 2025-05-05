@@ -326,8 +326,7 @@ instance : (MonoidalCategory.curriedTensor (ModuleCat R)).Additive where
     rfl
 
 noncomputable def twistedKoszulComplex_iso_cons :
-  HomologicalComplex.tensorObj (twistedKoszulComplex M [a]) (twistedKoszulComplex M rs)
-  ≅ twistedKoszulComplex M (a :: rs) := sorry
+  (koszulComplex [a]).tensorObj (twistedKoszulComplex M rs) ≅ twistedKoszulComplex M (a :: rs) := sorry
 
 end ind
 
